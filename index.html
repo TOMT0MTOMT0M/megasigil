@@ -1823,6 +1823,20 @@
     postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat);
     postScene.add(postQuad);
   }
+
+  function onResize3D() {
+    vw = Math.max(640, window.innerWidth);
+    vh = Math.max(480, window.innerHeight);
+    const pr = Math.min(1.75, window.devicePixelRatio || 1);
+    hudCanvas.width = vw;
+    hudCanvas.height = vh;
+    renderer.setPixelRatio(pr);
+    renderer.setSize(vw, vh);
+    renderTarget.setSize(Math.floor(vw * pr), Math.floor(vh * pr));
+    camera.aspect = vw / vh;
+    camera.updateProjectionMatrix();
+    postQuad.material.uniforms.uRes.value.set(vw, vh);
+  }
 /* =========================================================================
      PARTIE 3A : MONDE PROCÉDURAL, AUTELS USURIERS (SHOPS) & RELIQUES
      ========================================================================= */
@@ -1982,6 +1996,26 @@
 
   function hasPerk(id) { return player.perks[id] || 0; }
   function addPerk(id) { player.perks[id] = (player.perks[id] || 0) + 1; }
+
+  // Impulsion (dash) : consomme une charge et propulse le joueur vers le curseur / sa direction
+  function triggerImpulse() {
+    if (state !== 'PLAY' || player.dashCharges <= 0 || player.dashTime > 0) return;
+    let dx = 0, dy = 0;
+    if (keys['KeyW'] || keys['KeyZ'] || keys['ArrowUp']) dy -= 1;
+    if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
+    if (keys['KeyA'] || keys['KeyQ'] || keys['ArrowLeft']) dx -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) dx += 1;
+    if (dx === 0 && dy === 0) { dx = Math.cos(player.facing); dy = Math.sin(player.facing); }
+    const l = hypot(dx, dy) || 1;
+    player.dashDirX = dx / l;
+    player.dashDirY = dy / l;
+    player.dashTime = 0.16;
+    player.ghostTimer = 0.2;
+    player.invuln = Math.max(player.invuln, 0.22);
+    player.dashCharges--;
+    if (player.dashCd <= 0) player.dashCd = player.dashMaxCd;
+    AudioFX.playDashWhoosh();
+  }
 
   /* =========================================================================
      CATALOGUE COMPLET DES STIGMATES & OFFRES DE L'USURIER
