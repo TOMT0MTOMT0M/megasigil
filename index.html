@@ -1,0 +1,2700 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#030303">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>MEGASIGIL // BONK.04 — RAW CYBERSIGIL</title>
+<style>
+  :root {
+    --void: #030303;
+    --soot: #0A0908;
+    --rust: #1E1916;
+    --iron: #4A4642;
+    --bone: #CFC7B8;
+    --blood: #7A040E;
+    --artery: #C90A1D;
+    --green: #8CA892;
+    --font-mono: 'Courier New', Courier, monospace;
+    --font-serif: 'Times New Roman', Georgia, serif;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    border-radius: 0 !important;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: var(--bone);
+    font-family: var(--font-mono);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: none;
+  }
+
+  /* CHÂSSIS STRICTEMENT VERTICAL MOBILE */
+  #mobile-shell {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+    height: 100dvh;
+    background: var(--void);
+    border-left: 2px solid var(--iron);
+    border-right: 2px solid var(--iron);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  canvas#gl-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+    touch-action: none;
+  }
+
+  .frame-border {
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(207, 199, 184, 0.2);
+    pointer-events: none;
+    z-index: 15;
+  }
+
+  /* HUD SUPÉRIEUR */
+  .hud-top {
+    position: relative;
+    z-index: 20;
+    padding: 8px 8px 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(3,3,3,0.96) 0%, rgba(3,3,3,0.7) 75%, transparent 100%);
+  }
+
+  .top-strip {
+    display: flex;
+    gap: 4px;
+    align-items: stretch;
+    height: 26px;
+  }
+
+  .xp-vessel {
+    flex: 1;
+    position: relative;
+    background: var(--soot);
+    border: 1px solid var(--bone);
+    overflow: hidden;
+  }
+
+  #xp-bar {
+    height: 100%;
+    width: 0%;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--bone) 0px,
+      var(--bone) 3px,
+      var(--void) 3px,
+      var(--void) 5px
+    );
+  }
+
+  .xp-meta {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 6px;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    color: var(--bone);
+    mix-blend-mode: difference;
+  }
+
+  .sys-btn {
+    pointer-events: auto;
+    touch-action: manipulation;
+    background: var(--soot);
+    color: var(--bone);
+    border: 1px solid var(--bone);
+    padding: 0 8px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sys-btn.pause-btn {
+    background: var(--blood);
+    border-color: var(--artery);
+    color: var(--bone);
+  }
+
+  .sys-btn:active {
+    background: var(--bone);
+    color: var(--void);
+  }
+
+  .vitals-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 0.75fr 0.95fr;
+    gap: 4px;
+  }
+
+  .vital-cell {
+    background: rgba(8, 7, 7, 0.9);
+    border: 1px solid var(--iron);
+    padding: 3px 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .vital-cell.blood-cell {
+    border-left: 3px solid var(--artery);
+  }
+
+  .vital-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    color: #8E877F;
+    letter-spacing: 0.5px;
+  }
+
+  .vital-val {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--bone);
+  }
+
+  .hp-track {
+    width: 100%;
+    height: 5px;
+    background: #1B0306;
+    border: 1px solid var(--blood);
+    margin-top: 2px;
+  }
+
+  #hp-bar {
+    height: 100%;
+    width: 100%;
+    background: var(--artery);
+  }
+
+  .arsenal-row {
+    display: flex;
+    gap: 3px;
+    flex-wrap: wrap;
+  }
+
+  .wpn-tag {
+    background: rgba(10, 9, 8, 0.88);
+    border: 1px solid var(--iron);
+    padding: 2px 4px;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+    color: var(--bone);
+  }
+
+  .wpn-tag b {
+    color: var(--artery);
+  }
+
+  /* ALERTE CENTRALE */
+  #omen-alert {
+    position: relative;
+    z-index: 20;
+    align-self: center;
+    width: 92%;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-size: 13px;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--bone);
+    background: rgba(5, 4, 4, 0.92);
+    border-top: 1px solid var(--artery);
+    border-bottom: 1px solid var(--artery);
+    padding: 5px 8px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  /* ZONE BASSE (POUCE) */
+  .hud-bottom {
+    position: relative;
+    z-index: 20;
+    padding: 10px 12px 18px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+    background: linear-gradient(to top, rgba(3,3,3,0.92) 0%, rgba(3,3,3,0.4) 65%, transparent 100%);
+  }
+
+  .thumb-guide {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 8px;
+    color: rgba(207, 199, 184, 0.6);
+    letter-spacing: 1px;
+    border-left: 2px solid var(--iron);
+    padding-left: 6px;
+  }
+
+  .thumb-guide b {
+    color: var(--bone);
+  }
+
+  #btn-impulse {
+    pointer-events: auto;
+    touch-action: manipulation;
+    width: 86px;
+    height: 86px;
+    background: rgba(10, 8, 8, 0.94);
+    border: 2px solid var(--bone);
+    color: var(--bone);
+    font-family: var(--font-mono);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 4px 4px 0 var(--blood);
+  }
+
+  #btn-impulse:active {
+    transform: translate(2px, 2px);
+    background: var(--bone);
+    color: var(--void);
+  }
+
+  #impulse-cd-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0%;
+    background: rgba(201, 10, 29, 0.55);
+    pointer-events: none;
+  }
+
+  .imp-title {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    pointer-events: none;
+  }
+
+  .imp-sub {
+    font-size: 8px;
+    color: #9A9288;
+    margin-top: 2px;
+    pointer-events: none;
+  }
+
+  /* ÉCRANS SUPERPOSÉS (ACCUEIL, PAUSE, LEVEL-UP, MORT) */
+  .overlay-screen {
+    position: absolute;
+    inset: 0;
+    background: rgba(3, 3, 3, 0.92);
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 12px;
+    overflow-y: auto;
+    pointer-events: auto;
+    touch-action: pan-y;
+  }
+
+  .overlay-screen.active {
+    display: flex;
+  }
+
+  .panel-box {
+    border: 2px solid var(--bone);
+    background: var(--soot);
+    padding: 14px 12px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 6px 6px 0 var(--blood);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .title-block {
+    text-align: center;
+    border-bottom: 1px solid var(--iron);
+    padding-bottom: 8px;
+  }
+
+  .main-title {
+    font-family: var(--font-serif);
+    font-size: 26px;
+    letter-spacing: 5px;
+    color: var(--bone);
+  }
+
+  .sub-title {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--artery);
+    font-weight: 900;
+    margin-top: 2px;
+  }
+
+  /* EMPLACEMENTS DE SAUVEGARDE (3 SLOTS) */
+  .saves-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .save-slot {
+    border: 1px solid var(--iron);
+    background: #060505;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+  }
+
+  .save-slot.has-run {
+    border-color: var(--bone);
+    border-left: 4px solid var(--artery);
+  }
+
+  .slot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .slot-title {
+    font-family: var(--font-serif);
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    color: var(--bone);
+  }
+
+  .slot-badge {
+    font-size: 8px;
+    padding: 1px 5px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    background: var(--iron);
+    color: var(--bone);
+  }
+
+  .save-slot.has-run .slot-badge {
+    background: var(--artery);
+    color: var(--bone);
+  }
+
+  .slot-details {
+    font-size: 9px;
+    color: #9E968B;
+    line-height: 1.35;
+  }
+
+  .slot-actions {
+    display: flex;
+    gap: 5px;
+  }
+
+  .btn-action {
+    flex: 1;
+    padding: 9px 6px;
+    background: var(--bone);
+    color: var(--void);
+    border: 1px solid var(--bone);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-transform: uppercase;
+    text-align: center;
+    touch-action: manipulation;
+  }
+
+  .btn-action.resume {
+    background: var(--artery);
+    color: var(--bone);
+    border-color: var(--bone);
+  }
+
+  .btn-action.secondary {
+    background: var(--soot);
+    color: var(--bone);
+    border-color: var(--iron);
+  }
+
+  .btn-action.danger {
+    flex: 0 0 auto;
+    padding: 9px 10px;
+    background: var(--soot);
+    color: var(--artery);
+    border-color: var(--blood);
+  }
+
+  .btn-action:active {
+    background: #FFF;
+    color: #000;
+  }
+
+  /* ACCORDÉON CODEX / RÈGLES */
+  .codex-box {
+    border: 1px solid var(--iron);
+    background: #070606;
+    padding: 8px;
+    font-size: 9px;
+    line-height: 1.45;
+    color: #B5ADA0;
+    display: none;
+  }
+
+  .codex-box.open {
+    display: block;
+  }
+
+  .codex-box b { color: var(--bone); }
+  .codex-box .warn { color: var(--artery); font-weight: bold; }
+
+  /* CARTES DE TAROT (LEVEL UP) */
+  .tarot-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .tarot-card {
+    background: var(--soot);
+    border: 1px solid var(--bone);
+    border-left: 4px solid var(--artery);
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .tarot-card:active {
+    background: var(--bone);
+    color: var(--void);
+  }
+
+  .tarot-icon {
+    width: 44px;
+    height: 44px;
+    background: var(--void);
+    border: 1px solid var(--iron);
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .tarot-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    pointer-events: none;
+  }
+
+  .tarot-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .tarot-name {
+    font-family: var(--font-serif);
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+
+  .tarot-tag {
+    font-size: 8px;
+    color: var(--bone);
+    background: var(--blood);
+    padding: 1px 4px;
+    font-weight: 900;
+  }
+
+  .tarot-boon { font-size: 9.5px; color: var(--bone); line-height: 1.25; }
+  .tarot-curse { font-size: 8.5px; color: var(--artery); font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div id="mobile-shell">
+  <!-- CANVAS WEBGL SHADER TEMPS RÉEL -->
+  <canvas id="gl-canvas"></canvas>
+  <div class="frame-border"></div>
+
+  <!-- HUD HAUT -->
+  <header class="hud-top">
+    <div class="top-strip">
+      <div class="xp-vessel">
+        <div id="xp-bar"></div>
+        <div class="xp-meta">
+          <span id="ui-lvl">SCEAU I</span>
+          <span id="ui-xp">MERCURE: 0/8</span>
+        </div>
+      </div>
+      <button class="sys-btn pause-btn" id="btn-pause">PAUSE // MENU</button>
+      <button class="sys-btn" id="btn-sound">SON:ON</button>
+      <button class="sys-btn" id="btn-fs">ECRAN</button>
+    </div>
+
+    <div class="vitals-grid">
+      <div class="vital-cell blood-cell">
+        <div class="vital-head">
+          <span>SANG (SOIF: <b id="ui-bleed" style="color:var(--artery)">-0.8/s</b>)</span>
+          <span id="ui-hp-txt">100/100</span>
+        </div>
+        <div class="hp-track"><div id="hp-bar"></div></div>
+      </div>
+      <div class="vital-cell">
+        <div class="vital-head"><span id="ui-slot-lbl">SLOT I</span></div>
+        <div class="vital-val" id="ui-time">00:00</div>
+      </div>
+      <div class="vital-cell">
+        <div class="vital-head"><span>FRACAS // MURS</span></div>
+        <div class="vital-val" id="ui-slams">0 // 0</div>
+      </div>
+    </div>
+
+    <div class="arsenal-row" id="ui-arsenal"></div>
+  </header>
+
+  <!-- BANNIÈRE D'ALERTE -->
+  <div id="omen-alert">FRACAS MURAL // SANG RESTAURÉ</div>
+
+  <!-- HUD BAS -->
+  <footer class="hud-bottom">
+    <div class="thumb-guide">
+      <span>GLISSER : <b>MOUVEMENT</b></span>
+      <span>DOUBLE-TAP : <b>IMPULSION</b></span>
+      <span>FRACAS MURAL : <b>+4 SANG & BRISE-ARMURE</b></span>
+    </div>
+
+    <button id="btn-impulse">
+      <div id="impulse-cd-overlay"></div>
+      <span class="imp-title">IMPULSION</span>
+      <span class="imp-sub">[FRACAS]</span>
+    </button>
+  </footer>
+
+  <!-- =====================================================================
+       1. ÉCRAN D'ACCUEIL AVEC 3 EMPLACEMENTS DE SAUVEGARDE
+       ===================================================================== -->
+  <div class="overlay-screen active" id="screen-home">
+    <div class="panel-box">
+      <div class="title-block">
+        <div class="main-title">MEGASIGIL</div>
+        <div class="sub-title">BONK.04 // ARCHIVES DES 3 SCEAUX</div>
+      </div>
+
+      <!-- Liste dynamique des 3 sauvegardes -->
+      <div class="saves-list" id="saves-container"></div>
+
+      <button class="btn-action secondary" id="btn-toggle-codex">AFFICHER / MASQUER LES RÈGLES DE SANG</button>
+      <div class="codex-box" id="codex-rules">
+        1. <span class="warn">LA SOIF DU SCEAU :</span> Votre enveloppe saigne en continu. Fuir passivement vous tuera.<br>
+        2. <b>FRACAS MURAL (BONK) :</b> Projetez les entités contre les <b>Monolithes de Fer</b> pour briser leur carapace et <b>boire +4 PV</b>.<br>
+        3. <b>CUIRASSÉS D’OXYDE :</b> Leur blindage bloque 85% des dégâts directs. <b>Seul un Fracas Mural détruit leur armure.</b><br>
+        4. <b>SAUVEGARDE AUTO :</b> Votre progression est enregistrée en temps réel dans le Slot actif.
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       2. ÉCRAN DE PAUSE EN COURS DE PARTIE ("REVENIR EN JEU" OU "MENU")
+       ===================================================================== -->
+  <div class="overlay-screen" id="screen-pause">
+    <div class="panel-box">
+      <div class="title-block">
+        <div class="main-title">STASE RITUELLE</div>
+        <div class="sub-title" id="pause-slot-sub">SAUVEGARDE AUTOMATIQUE EFFECTUÉE</div>
+      </div>
+
+      <div class="slot-details" id="pause-stats-summary" style="border:1px solid var(--iron);padding:8px;background:#060505;"></div>
+
+      <button class="btn-action resume" id="btn-resume-run">▶ REVENIR EN JEU [CONTINUER]</button>
+      <button class="btn-action secondary" id="btn-restart-run">↻ RECOMMENCER SUR CE SLOT</button>
+      <button class="btn-action secondary" id="btn-quit-to-menu">◀ MENU D'ACCUEIL [3 SAUVEGARDES]</button>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       3. ÉCRAN LEVEL UP : STIGMATES MAUDITES
+       ===================================================================== -->
+  <div class="overlay-screen" id="screen-levelup">
+    <div class="panel-box">
+      <div class="title-block">
+        <div class="main-title" style="font-size:20px;">STIGMATE DU SCEAU</div>
+        <div class="sub-title">TOUTE PUISSANCE EXIGE UN TRIBUT DE CHAIR</div>
+      </div>
+      <div class="tarot-stack" id="tarot-container"></div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       4. ÉCRAN DE MORT (AUTOPSIE)
+       ===================================================================== -->
+  <div class="overlay-screen" id="screen-gameover">
+    <div class="panel-box">
+      <div class="title-block">
+        <div class="main-title">EXSANGUINATION</div>
+        <div class="sub-title">RAPPORT D'AUTOPSIE DU SCEAU</div>
+      </div>
+      <div class="slot-details" id="gameover-stats" style="border:1px solid var(--iron);padding:10px;background:#060505;line-height:1.6;"></div>
+      <button class="btn-action resume" id="btn-retry-dead">↻ ROUVRIR LA PLAIE [REJOUER CE SLOT]</button>
+      <button class="btn-action secondary" id="btn-dead-to-menu">◀ MENU D'ACCUEIL [3 SAUVEGARDES]</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* =========================================================================
+     0. GESTIONNAIRE TACTILE MOBILE INFAILLIBLE (CORRECTION BUG ANDROID)
+     ========================================================================= */
+  function bindTap(elOrId, handler) {
+    const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+    if (!el) return;
+    let lastTrigger = 0;
+    const trigger = (e) => {
+      e.stopPropagation();
+      const now = performance.now();
+      if (now - lastTrigger < 220) return;
+      lastTrigger = now;
+      try {
+        AudioFX.init();
+      } catch (_) {}
+      handler(e);
+    };
+    el.addEventListener('pointerup', trigger);
+    el.addEventListener('click', trigger);
+  }
+
+  /* =========================================================================
+     1. SYSTÈME DE 3 EMPLACEMENTS DE SAUVEGARDE (LOCALSTORAGE)
+     ========================================================================= */
+  const STORAGE_KEY = 'MEGASIGIL_V4_SLOTS';
+  let activeSlotIndex = 0;
+
+  function createEmptySlot(idx) {
+    return {
+      id: idx,
+      bestTime: 0,
+      totalKills: 0,
+      totalSlams: 0,
+      runsCount: 0,
+      activeRun: null // Contient l'état complet de la partie si en cours
+    };
+  }
+
+  let saveSlots = [createEmptySlot(0), createEmptySlot(1), createEmptySlot(2)];
+
+  function loadAllSlots() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length === 3) {
+          saveSlots = parsed.map((s, i) => Object.assign(createEmptySlot(i), s));
+        }
+      }
+    } catch (_) {
+      saveSlots = [createEmptySlot(0), createEmptySlot(1), createEmptySlot(2)];
+    }
+  }
+
+  function persistAllSlots() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(saveSlots));
+    } catch (_) {}
+  }
+
+  function formatMMSS(sec) {
+    const m = String(Math.floor(sec / 60)).padStart(2, '0');
+    const s = String(Math.floor(sec % 60)).padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function saveCurrentRunToSlot() {
+    if (state !== 'PLAY' && state !== 'PAUSE' && state !== 'LEVELUP') return;
+    const slot = saveSlots[activeSlotIndex];
+    slot.activeRun = {
+      seed: SEED,
+      timeSurvived,
+      totalKills,
+      totalWallSlams,
+      player: JSON.parse(JSON.stringify(player))
+    };
+    if (timeSurvived > slot.bestTime) slot.bestTime = timeSurvived;
+    persistAllSlots();
+  }
+
+  function clearActiveRunOnDeath() {
+    const slot = saveSlots[activeSlotIndex];
+    if (timeSurvived > slot.bestTime) slot.bestTime = timeSurvived;
+    slot.totalKills += totalKills;
+    slot.totalSlams += totalWallSlams;
+    slot.runsCount += 1;
+    slot.activeRun = null;
+    persistAllSlots();
+  }
+
+  function renderHomeSlots() {
+    const container = document.getElementById('saves-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const numerals = ['I', 'II', 'III'];
+    saveSlots.forEach((slot, idx) => {
+      const div = document.createElement('div');
+      const hasRun = !!slot.activeRun;
+      div.className = `save-slot ${hasRun ? 'has-run' : ''}`;
+
+      let detailsHtml = '';
+      if (hasRun) {
+        const r = slot.activeRun;
+        detailsHtml = `
+          <b style="color:var(--bone)">PARTIE EN COURS :</b> NIVEAU ${r.player.level} // TEMPS ${formatMMSS(r.timeSurvived)}<br>
+          SANG : ${Math.ceil(r.player.hp)}/${r.player.maxHp} PV // PURGÉS : ${r.totalKills} (FRACAS : ${r.totalWallSlams})
+        `;
+      } else if (slot.runsCount > 0 || slot.bestTime > 0) {
+        detailsHtml = `
+          RECORD SURVIE : <b style="color:var(--bone)">${formatMMSS(slot.bestTime)}</b> // EXPÉDITIONS : ${slot.runsCount}<br>
+          TOTAL PURGÉS : ${slot.totalKills} // TOTAL FRACAS MURAUX : ${slot.totalSlams}
+        `;
+      } else {
+        detailsHtml = `EMPLACEMENT VIERGE // AUCUNE STIGMATE GRAVÉE`;
+      }
+
+      div.innerHTML = `
+        <div class="slot-header">
+          <span class="slot-title">SCEAU DE SAUVEGARDE ${numerals[idx]}</span>
+          <span class="slot-badge">${hasRun ? 'EN COURS' : (slot.runsCount > 0 ? 'ARCHIVES' : 'VIDE')}</span>
+        </div>
+        <div class="slot-details">${detailsHtml}</div>
+        <div class="slot-actions" id="slot-actions-${idx}"></div>
+      `;
+      container.appendChild(div);
+
+      const actionsEl = div.querySelector(`#slot-actions-${idx}`);
+      if (hasRun) {
+        const btnResume = document.createElement('button');
+        btnResume.className = 'btn-action resume';
+        btnResume.textContent = '▶ REVENIR EN JEU';
+        bindTap(btnResume, () => resumeSavedRun(idx));
+        actionsEl.appendChild(btnResume);
+
+        const btnNew = document.createElement('button');
+        btnNew.className = 'btn-action secondary';
+        btnNew.textContent = 'NOUVEAU';
+        bindTap(btnNew, () => startFreshRunOnSlot(idx));
+        actionsEl.appendChild(btnNew);
+      } else {
+        const btnStart = document.createElement('button');
+        btnStart.className = 'btn-action';
+        btnStart.textContent = 'GRAVER LE SCEAU [JOUER]';
+        bindTap(btnStart, () => startFreshRunOnSlot(idx));
+        actionsEl.appendChild(btnStart);
+      }
+
+      if (hasRun || slot.runsCount > 0 || slot.bestTime > 0) {
+        const btnWipe = document.createElement('button');
+        btnWipe.className = 'btn-action danger';
+        btnWipe.textContent = '✕';
+        bindTap(btnWipe, () => {
+          saveSlots[idx] = createEmptySlot(idx);
+          persistAllSlots();
+          renderHomeSlots();
+        });
+        actionsEl.appendChild(btnWipe);
+      }
+    });
+  }
+
+  /* =========================================================================
+     2. PIPELINE WEBGL FRAGMENT SHADER "CRADE / XEROX / BAYER DITHER"
+     ========================================================================= */
+  const glCanvas = document.getElementById('gl-canvas');
+  const offCanvas = document.createElement('canvas');
+  const ctx = offCanvas.getContext('2d', { alpha: false });
+
+  let gl = null;
+  let glProg = null;
+  let glTex = null;
+  let uLocs = {};
+
+  const VS_SRC = `
+    attribute vec2 a_pos;
+    varying vec2 v_uv;
+    void main() {
+      v_uv = vec2(a_pos.x * 0.5 + 0.5, 0.5 - a_pos.y * 0.5);
+      gl_Position = vec4(a_pos, 0.0, 1.0);
+    }
+  `;
+
+  const FS_SRC = `
+    precision mediump float;
+    varying vec2 v_uv;
+    uniform sampler2D u_tex;
+    uniform vec2 u_res;
+    uniform float u_time;
+    uniform float u_impact;
+    uniform float u_bleedRatio;
+
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+    }
+
+    float bayer4(vec2 coord) {
+      vec2 p = mod(floor(coord), 4.0);
+      float idx = p.x + p.y * 4.0;
+      if (idx < 0.5) return 0.0/16.0;
+      if (idx < 1.5) return 8.0/16.0;
+      if (idx < 2.5) return 2.0/16.0;
+      if (idx < 3.5) return 10.0/16.0;
+      if (idx < 4.5) return 12.0/16.0;
+      if (idx < 5.5) return 4.0/16.0;
+      if (idx < 6.5) return 14.0/16.0;
+      if (idx < 7.5) return 6.0/16.0;
+      if (idx < 8.5) return 3.0/16.0;
+      if (idx < 9.5) return 11.0/16.0;
+      if (idx < 10.5) return 1.0/16.0;
+      if (idx < 11.5) return 9.0/16.0;
+      if (idx < 12.5) return 15.0/16.0;
+      if (idx < 13.5) return 7.0/16.0;
+      if (idx < 14.5) return 13.0/16.0;
+      return 5.0/16.0;
+    }
+
+    void main() {
+      vec2 uv = v_uv;
+      vec2 centered = uv * 2.0 - 1.0;
+      float r2 = dot(centered, centered);
+
+      uv += centered * (r2 * 0.032);
+      float tearLine = step(0.986 - u_impact * 0.12, hash(vec2(floor(uv.y * 55.0), floor(u_time * 24.0))));
+      uv.x += tearLine * (hash(vec2(uv.y, u_time)) - 0.5) * (0.016 + u_impact * 0.045);
+
+      float chroma = (0.002 + r2 * 0.004 + u_impact * 0.015);
+      vec3 colR = texture2D(u_tex, uv + vec2(chroma, 0.0)).rgb;
+      vec3 colG = texture2D(u_tex, uv).rgb;
+      vec3 colB = texture2D(u_tex, uv - vec2(chroma, 0.0)).rgb;
+      vec3 col = vec3(colR.r, colG.g, colB.b);
+
+      float rawNoise = hash(uv * u_res + vec2(u_time * 60.0, -u_time * 43.0));
+      float scanline = sin(uv.y * u_res.y * 1.35) * 0.06;
+
+      float redDominance = clamp((col.r - max(col.g, col.b)) * 2.2, 0.0, 1.0);
+      float luma = dot(col, vec3(0.299, 0.587, 0.114));
+
+      float dither = (bayer4(gl_FragCoord.xy * 0.5) - 0.5) * 0.22;
+      float filthyLuma = luma + dither + (rawNoise - 0.5) * 0.14 - scanline;
+      float quantized = floor(filthyLuma * 4.5 + 0.5) / 4.5;
+      float finalLuma = mix(filthyLuma, quantized, 0.55);
+
+      vec3 soot = vec3(0.018, 0.016, 0.016);
+      vec3 bone = vec3(0.83, 0.79, 0.73);
+      vec3 baseGritty = mix(soot, bone, clamp(finalLuma, 0.0, 1.0));
+
+      vec3 bloodCol = vec3(0.85, 0.03, 0.11);
+      vec3 outCol = mix(baseGritty, bloodCol, redDominance);
+
+      float scratch = step(0.996, hash(vec2(floor(uv.x * 320.0), floor(u_time * 6.0))));
+      outCol += scratch * vec3(0.16, 0.14, 0.12);
+
+      float vig = smoothstep(1.4, 0.3, r2);
+      outCol *= vig;
+      float dangerPulse = (1.0 - vig) * u_bleedRatio * (0.55 + 0.45 * sin(u_time * 9.0));
+      outCol += dangerPulse * vec3(0.55, 0.0, 0.04);
+
+      if (u_impact > 0.65) {
+        outCol = mix(outCol, 1.0 - outCol, (u_impact - 0.65) * 2.2);
+      }
+
+      gl_FragColor = vec4(outCol, 1.0);
+    }
+  `;
+
+  function initWebGL() {
+    try {
+      gl = glCanvas.getContext('webgl', { antialias: false, preserveDrawingBuffer: false });
+      if (!gl) return;
+
+      const compile = (type, src) => {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) return null;
+        return s;
+      };
+
+      const vs = compile(gl.VERTEX_SHADER, VS_SRC);
+      const fs = compile(gl.FRAGMENT_SHADER, FS_SRC);
+      if (!vs || !fs) { gl = null; return; }
+
+      glProg = gl.createProgram();
+      gl.attachShader(glProg, vs);
+      gl.attachShader(glProg, fs);
+      gl.linkProgram(glProg);
+      if (!gl.getProgramParameter(glProg, gl.LINK_STATUS)) { gl = null; return; }
+      gl.useProgram(glProg);
+
+      const buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -1, -1,  1, -1, -1,  1,
+        -1,  1,  1, -1,  1,  1
+      ]), gl.STATIC_DRAW);
+
+      const aPos = gl.getAttribLocation(glProg, 'a_pos');
+      gl.enableVertexAttribArray(aPos);
+      gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+      glTex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, glTex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+      uLocs = {
+        res: gl.getUniformLocation(glProg, 'u_res'),
+        time: gl.getUniformLocation(glProg, 'u_time'),
+        impact: gl.getUniformLocation(glProg, 'u_impact'),
+        bleedRatio: gl.getUniformLocation(glProg, 'u_bleedRatio')
+      };
+    } catch (_) {
+      gl = null;
+    }
+  }
+
+  let vw = 360;
+  let vh = 640;
+
+  function resizeViewport() {
+    const shell = document.getElementById('mobile-shell');
+    const rect = shell.getBoundingClientRect();
+    vw = Math.max(200, Math.floor(rect.width));
+    vh = Math.max(300, Math.floor(rect.height));
+    offCanvas.width = vw;
+    offCanvas.height = vh;
+    glCanvas.width = vw;
+    glCanvas.height = vh;
+    if (gl) gl.viewport(0, 0, vw, vh);
+  }
+
+  /* =========================================================================
+     3. SYNTHÉTISEUR AUDIO INDUSTRIEL CRADE (WEB AUDIO API)
+     ========================================================================= */
+  const AudioFX = {
+    ctx: null,
+    muted: false,
+    distCurve: null,
+    droneGain: null,
+
+    init() {
+      try {
+        if (this.ctx) {
+          if (this.ctx.state === 'suspended') this.ctx.resume();
+          return;
+        }
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        this.ctx = new AC();
+        this.distCurve = this.makeHarshCurve(650);
+        this.startOppressiveDrone();
+      } catch (_) {}
+    },
+
+    makeHarshCurve(k) {
+      const n = 22050;
+      const c = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        const x = (i * 2) / n - 1;
+        c[i] = Math.tanh(x * (k / 40)) * (x > 0 ? 1.0 : 0.78);
+      }
+      return c;
+    },
+
+    startOppressiveDrone() {
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+      const o1 = this.ctx.createOscillator();
+      const o2 = this.ctx.createOscillator();
+      const filter = this.ctx.createBiquadFilter();
+      this.droneGain = this.ctx.createGain();
+
+      o1.type = 'sawtooth';
+      o2.type = 'square';
+      o1.frequency.setValueAtTime(32.7, now);
+      o2.frequency.setValueAtTime(46.25, now);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(82, now);
+      filter.Q.setValueAtTime(9, now);
+
+      this.droneGain.gain.setValueAtTime(this.muted ? 0 : 0.055, now);
+
+      o1.connect(filter);
+      o2.connect(filter);
+      filter.connect(this.droneGain);
+      this.droneGain.connect(this.ctx.destination);
+      o1.start();
+      o2.start();
+    },
+
+    playMetallicBonk(isWallSlam = false, isArmorClink = false) {
+      if (this.muted || !this.ctx) return;
+      try {
+        const now = this.ctx.currentTime;
+        const shaper = this.ctx.createWaveShaper();
+        shaper.curve = this.distCurve;
+
+        if (isArmorClink) {
+          const osc = this.ctx.createOscillator();
+          const g = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(980, now);
+          osc.frequency.exponentialRampToValueAtTime(420, now + 0.06);
+          g.gain.setValueAtTime(0.14, now);
+          g.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+          osc.connect(g);
+          g.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.07);
+          return;
+        }
+
+        const sub = this.ctx.createOscillator();
+        const subG = this.ctx.createGain();
+        sub.type = 'sawtooth';
+        sub.frequency.setValueAtTime(isWallSlam ? 185 : 115, now);
+        sub.frequency.exponentialRampToValueAtTime(22, now + (isWallSlam ? 0.28 : 0.13));
+        subG.gain.setValueAtTime(isWallSlam ? 0.42 : 0.24, now);
+        subG.gain.exponentialRampToValueAtTime(0.001, now + (isWallSlam ? 0.30 : 0.14));
+
+        sub.connect(shaper);
+        shaper.connect(subG);
+        subG.connect(this.ctx.destination);
+        sub.start(now);
+        sub.stop(now + 0.31);
+
+        const car = this.ctx.createOscillator();
+        const mod = this.ctx.createOscillator();
+        const modG = this.ctx.createGain();
+        const carG = this.ctx.createGain();
+
+        const f = isWallSlam ? 280 : (190 + Math.random() * 70);
+        car.type = 'triangle';
+        mod.type = 'sawtooth';
+        car.frequency.setValueAtTime(f, now);
+        mod.frequency.setValueAtTime(f * 1.618, now);
+
+        modG.gain.setValueAtTime(f * 3.2, now);
+        modG.gain.exponentialRampToValueAtTime(2, now + 0.18);
+
+        carG.gain.setValueAtTime(isWallSlam ? 0.30 : 0.14, now);
+        carG.gain.exponentialRampToValueAtTime(0.001, now + (isWallSlam ? 0.38 : 0.12));
+
+        mod.connect(modG);
+        modG.connect(car.frequency);
+        car.connect(carG);
+        carG.connect(this.ctx.destination);
+        car.start(now);
+        mod.start(now);
+        car.stop(now + 0.39);
+        mod.stop(now + 0.39);
+      } catch (_) {}
+    },
+
+    playScreech() {
+      if (this.muted || !this.ctx) return;
+      try {
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(640, now);
+        osc.frequency.linearRampToValueAtTime(110, now + 0.18);
+        g.gain.setValueAtTime(0.22, now);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
+        osc.connect(g);
+        g.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } catch (_) {}
+    }
+  };
+
+  /* =========================================================================
+     4. OUTILS DE DESSIN CALLIGRAPHIQUE NEO-SIGIL / TRIBAL-SIGIL
+     ========================================================================= */
+  const TAU = Math.PI * 2;
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const hypot = Math.hypot;
+
+  let SEED = 66613;
+  function hash2D(ix, iy) {
+    let n = ix * 374761393 + iy * 668265263 + SEED * 1442695041;
+    n = (n ^ (n >> 13)) * 1274126177;
+    return ((n ^ (n >> 16)) >>> 0) / 4294967295;
+  }
+
+  function drawRazorArc(ctx, x0, y0, cx, cy, x1, y1, thickness) {
+    const nx = -(y1 - y0);
+    const ny = (x1 - x0);
+    const l = Math.hypot(nx, ny) || 1;
+    const ux = (nx / l) * thickness;
+    const uy = (ny / l) * thickness;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.quadraticCurveTo(cx + ux, cy + uy, x1, y1);
+    ctx.quadraticCurveTo(cx - ux, cy - uy, x0, y0);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawBarbedSpike(ctx, length, width) {
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(width * 0.4, -length * 0.22);
+    ctx.lineTo(width * 1.15, -length * 0.16);
+    ctx.quadraticCurveTo(width * 0.45, -length * 0.55, 0, -length);
+    ctx.quadraticCurveTo(-width * 0.45, -length * 0.55, -width * 1.15, -length * 0.16);
+    ctx.lineTo(-width * 0.4, -length * 0.22);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /* =========================================================================
+     5. TERRAIN PROCÉDURAL INFINI (MONOLITHES, STÈLES, GRAVURES)
+     ========================================================================= */
+  const CELL_W = 340;
+  const cells = new Map();
+
+  function getCell(cx, cy) {
+    const key = `${cx},${cy}`;
+    if (cells.has(key)) return cells.get(key);
+
+    const h = hash2D(cx, cy);
+    const wx = cx * CELL_W;
+    const wy = cy * CELL_W;
+    const isSpawn = (cx === 0 && cy === 0);
+
+    const cell = { cx, cy, pillars: [], shrine: null, runeRing: null };
+
+    const pCount = isSpawn ? 1 : (1 + Math.floor(hash2D(cx + 5, cy - 3) * 3));
+    for (let i = 0; i < pCount; i++) {
+      const px = isSpawn ? wx + 115 : wx + 50 + hash2D(cx * 3 + i, cy) * (CELL_W - 100);
+      const py = isSpawn ? wy - 95 : wy + 50 + hash2D(cx, cy * 3 + i) * (CELL_W - 100);
+      const r = 20 + hash2D(cx - i, cy + i) * 14;
+      cell.pillars.push({
+        x: px, y: py, r,
+        hp: 160,
+        destroyed: false,
+        rot: hash2D(cx, cy + i) * TAU,
+        barbs: 4 + (i % 3) * 2
+      });
+    }
+
+    if (!isSpawn && h > 0.68) {
+      cell.shrine = {
+        x: wx + CELL_W * 0.5,
+        y: wy + CELL_W * 0.5,
+        r: 72,
+        progress: 0,
+        done: false
+      };
+    }
+
+    if (h < 0.55) {
+      cell.runeRing = {
+        x: wx + CELL_W * 0.5,
+        y: wy + CELL_W * 0.5,
+        r: 60 + h * 85,
+        rot: h * TAU,
+        symmetry: 4 + (Math.floor(h * 10) % 4) * 2
+      };
+    }
+
+    cells.set(key, cell);
+    return cell;
+  }
+
+  /* =========================================================================
+     6. ÉTAT DU JEU & ARSENAL HARDCORE
+     ========================================================================= */
+  let state = 'HOME'; // HOME, PLAY, PAUSE, LEVELUP, OVER
+  let timeSurvived = 0;
+  let totalKills = 0;
+  let totalWallSlams = 0;
+  let shaderImpact = 0;
+  let hitstop = 0;
+  let camShake = 0;
+  let autoSaveTimer = 0;
+
+  const player = {
+    x: 0, y: 0,
+    vx: 0, vy: 0,
+    r: 14,
+    hp: 100,
+    maxHp: 100,
+    bleedRate: 0.85,
+    speed: 190,
+    facing: -Math.PI / 2,
+    level: 1,
+    xp: 0,
+    xpNext: 8,
+    dashCd: 0,
+    dashMaxCd: 2.4,
+    dashTime: 0,
+    invuln: 0,
+    dmgMult: 1.0,
+    bonkMult: 1.0,
+    sizeMult: 1.0,
+    cdrMult: 1.0,
+    vampSlam: 4.0,
+    weapons: {
+      cleaver: { level: 1, timer: 0 },
+      needles: { level: 1, timer: 0 },
+      anvil:   { level: 0, timer: 0 },
+      chains:  { level: 0, timer: 0 },
+      saw:     { level: 0, angle: 0 }
+    }
+  };
+
+  const enemies = [];
+  const needles = [];
+  const hazards = [];
+  const gems = [];
+  const slashes = [];
+  const particles = [];
+  const decals = [];
+  const popups = [];
+
+  const CURSED_TAROTS = [
+    {
+      title: 'FAUCHEUSE D’OS',
+      tag: 'ARME // BONK',
+      boon: 'Améliore la Faucheuse Tribale (+35% Dégâts, Portée et Répulsion).',
+      curse: 'TRIBUT : +0.15 Soif de Sang / sec.',
+      apply: () => { player.weapons.cleaver.level++; player.bleedRate += 0.15; }
+    },
+    {
+      title: 'AIGUILLES DE MOELLE',
+      tag: 'ARME // TIR',
+      boon: '+1 Aiguille perforante et cadence accrue.',
+      curse: 'TRIBUT : -8 Intégrité Max.',
+      apply: () => {
+        player.weapons.needles.level++;
+        player.maxHp = Math.max(30, player.maxHp - 8);
+        player.hp = Math.min(player.hp, player.maxHp);
+      }
+    },
+    {
+      title: 'PRESSE SISMIQUE',
+      tag: 'ARME // CATAPULTE',
+      boon: 'Onde de choc lourde qui projette toute la meute contre les murs.',
+      curse: 'TRIBUT : +0.20 Soif de Sang / sec.',
+      apply: () => { player.weapons.anvil.level++; player.bleedRate += 0.20; }
+    },
+    {
+      title: 'CHAÎNES BARBELÉES',
+      tag: 'ARME // ARCS',
+      boon: 'Enchaîne et électrocute plusieurs entités proches.',
+      curse: 'TRIBUT : Attire 1 Élite Immédiatement.',
+      apply: () => { player.weapons.chains.level++; spawnEnemy('charger', true); }
+    },
+    {
+      title: 'ROUE DE SUPPLICE',
+      tag: 'ARME // ORBITE',
+      boon: 'Anneau de lames chirurgicales tournant autour du Sceau.',
+      curse: 'TRIBUT : -5% Vitesse de déplacement.',
+      apply: () => { player.weapons.saw.level++; player.speed *= 0.95; }
+    },
+    {
+      title: 'CINÉTIQUE BRUTALE',
+      tag: 'PACTE // BONK',
+      boon: '+55% Force de projection (BONK) et +3 PV bus par Fracas Mural.',
+      curse: 'TRIBUT : +0.12 Soif de Sang / sec.',
+      apply: () => { player.bonkMult += 0.55; player.vampSlam += 3; player.bleedRate += 0.12; }
+    },
+    {
+      title: 'FRÉNÉSIE INDUSTRIELLE',
+      tag: 'PACTE // CADENCE',
+      boon: '+28% Cadence d’attaque globale et +15% Vitesse de course.',
+      curse: 'TRIBUT : +0.28 Soif de Sang / sec.',
+      apply: () => { player.cdrMult *= 0.76; player.speed *= 1.15; player.bleedRate += 0.28; }
+    },
+    {
+      title: 'TRANSFUSION NOIRE',
+      tag: 'SURVIE // SANG',
+      boon: 'Restaure 100% du Sang et réduit la Soif de Sang de -0.35/s.',
+      curse: 'TRIBUT : -10% Dégâts directs.',
+      apply: () => {
+        player.bleedRate = Math.max(0.4, player.bleedRate - 0.35);
+        player.hp = player.maxHp;
+        player.dmgMult *= 0.90;
+      }
+    }
+  ];
+
+  /* =========================================================================
+     7. NAVIGATION ENTRE MENUS, PAUSE & SAUVEGARDES
+     ========================================================================= */
+  function hideAllScreens() {
+    document.querySelectorAll('.overlay-screen').forEach(el => el.classList.remove('active'));
+  }
+
+  function openHomeMenu() {
+    saveCurrentRunToSlot();
+    state = 'HOME';
+    hideAllScreens();
+    renderHomeSlots();
+    document.getElementById('screen-home').classList.add('active');
+  }
+
+  function openPauseMenu() {
+    if (state !== 'PLAY') return;
+    saveCurrentRunToSlot();
+    state = 'PAUSE';
+    hideAllScreens();
+    const numerals = ['I', 'II', 'III'];
+    document.getElementById('pause-slot-sub').textContent = `SCEAU ${numerals[activeSlotIndex]} // SAUVEGARDÉ EN TEMPS RÉEL`;
+    document.getElementById('pause-stats-summary').innerHTML = `
+      • <b style="color:var(--bone)">EMPLACEMENT ACTIF :</b> SCEAU ${numerals[activeSlotIndex]}<br>
+      • <b style="color:var(--bone)">NIVEAU DE MUTATION :</b> NV.${player.level} (${player.xp}/${player.xpNext} MERCURE)<br>
+      • <b style="color:var(--bone)">INTÉGRITÉ :</b> ${Math.ceil(player.hp)} / ${player.maxHp} PV (SOIF: -${player.bleedRate.toFixed(2)}/s)<br>
+      • <b style="color:var(--bone)">TEMPS & CHASSE :</b> ${formatMMSS(timeSurvived)} // ${totalKills} PURGÉS (${totalWallSlams} FRACAS MURAUX)
+    `;
+    document.getElementById('screen-pause').classList.add('active');
+  }
+
+  function resumeCurrentRun() {
+    hideAllScreens();
+    state = 'PLAY';
+    showOmen('RETOUR DANS LA STRATE');
+    syncHUD();
+  }
+
+  function resetWorldBuffers() {
+    cells.clear();
+    enemies.length = 0;
+    needles.length = 0;
+    hazards.length = 0;
+    gems.length = 0;
+    slashes.length = 0;
+    particles.length = 0;
+    decals.length = 0;
+    popups.length = 0;
+  }
+
+  function startFreshRunOnSlot(slotIdx) {
+    activeSlotIndex = slotIdx;
+    SEED = Math.floor(Math.random() * 999999);
+    resetWorldBuffers();
+
+    timeSurvived = 0;
+    totalKills = 0;
+    totalWallSlams = 0;
+
+    Object.assign(player, {
+      x: 0, y: 0, vx: 0, vy: 0,
+      hp: 100, maxHp: 100, bleedRate: 0.85, speed: 190,
+      level: 1, xp: 0, xpNext: 8,
+      dashCd: 0, dashTime: 0, invuln: 0.5,
+      dmgMult: 1.0, bonkMult: 1.0, sizeMult: 1.0, cdrMult: 1.0, vampSlam: 4.0,
+      weapons: {
+        cleaver: { level: 1, timer: 0 },
+        needles: { level: 1, timer: 0 },
+        anvil:   { level: 0, timer: 0 },
+        chains:  { level: 0, timer: 0 },
+        saw:     { level: 0, angle: 0 }
+      }
+    });
+
+    hideAllScreens();
+    state = 'PLAY';
+    saveCurrentRunToSlot();
+    AudioFX.playMetallicBonk(true, false);
+    showOmen(`SCEAU ${['I','II','III'][slotIdx]} OUVERT // FRACASSEZ POUR BOIRE`);
+    syncHUD();
+  }
+
+  function resumeSavedRun(slotIdx) {
+    const slot = saveSlots[slotIdx];
+    if (!slot || !slot.activeRun) {
+      startFreshRunOnSlot(slotIdx);
+      return;
+    }
+    activeSlotIndex = slotIdx;
+    const saved = slot.activeRun;
+    SEED = saved.seed || 66613;
+    resetWorldBuffers();
+
+    timeSurvived = saved.timeSurvived || 0;
+    totalKills = saved.totalKills || 0;
+    totalWallSlams = saved.totalWallSlams || 0;
+    Object.assign(player, JSON.parse(JSON.stringify(saved.player)));
+    player.invuln = 1.0;
+
+    hideAllScreens();
+    state = 'PLAY';
+    AudioFX.playMetallicBonk(true, false);
+    showOmen(`SCEAU ${['I','II','III'][slotIdx]} RESTAURÉ // REPRISE DU COMBAT`);
+    syncHUD();
+  }
+
+  /* =========================================================================
+     8. CONTRÔLES TACTILES & BOUTONS D'INTERFACE
+     ========================================================================= */
+  bindTap('btn-pause', () => {
+    if (state === 'PLAY') openPauseMenu();
+    else if (state === 'PAUSE') resumeCurrentRun();
+  });
+
+  bindTap('btn-resume-run', () => resumeCurrentRun());
+  bindTap('btn-restart-run', () => startFreshRunOnSlot(activeSlotIndex));
+  bindTap('btn-quit-to-menu', () => openHomeMenu());
+
+  bindTap('btn-retry-dead', () => startFreshRunOnSlot(activeSlotIndex));
+  bindTap('btn-dead-to-menu', () => openHomeMenu());
+
+  bindTap('btn-toggle-codex', () => {
+    document.getElementById('codex-rules').classList.toggle('open');
+  });
+
+  bindTap('btn-sound', (e) => {
+    AudioFX.muted = !AudioFX.muted;
+    e.target.textContent = `SON:${AudioFX.muted ? 'OFF' : 'ON'}`;
+    if (AudioFX.droneGain && AudioFX.ctx) {
+      AudioFX.droneGain.gain.setTargetAtTime(AudioFX.muted ? 0 : 0.055, AudioFX.ctx.currentTime, 0.05);
+    }
+  });
+
+  bindTap('btn-fs', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  });
+
+  bindTap('btn-impulse', () => {
+    if (state === 'PLAY') triggerImpulse();
+  });
+
+  // Clavier & Joystick Tactile sur le Canvas
+  const keys = {};
+  window.addEventListener('keydown', (e) => {
+    keys[e.code] = true;
+    if (e.code === 'Space' && state === 'PLAY') {
+      e.preventDefault();
+      triggerImpulse();
+    } else if (e.code === 'Escape') {
+      if (state === 'PLAY') openPauseMenu();
+      else if (state === 'PAUSE') resumeCurrentRun();
+    }
+  });
+  window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+
+  const joy = { active: false, id: null, sx: 0, sy: 0, cx: 0, cy: 0, dx: 0, dy: 0 };
+  let lastCanvasTap = 0;
+
+  glCanvas.addEventListener('pointerdown', (e) => {
+    if (state !== 'PLAY') return;
+    AudioFX.init();
+
+    const now = performance.now();
+    if (now - lastCanvasTap < 230) {
+      triggerImpulse();
+    }
+    lastCanvasTap = now;
+
+    if (!joy.active) {
+      const rect = glCanvas.getBoundingClientRect();
+      joy.active = true;
+      joy.id = e.pointerId;
+      joy.sx = e.clientX - rect.left;
+      joy.sy = e.clientY - rect.top;
+      joy.cx = joy.sx;
+      joy.cy = joy.sy;
+      joy.dx = 0;
+      joy.dy = 0;
+    }
+  });
+
+  window.addEventListener('pointermove', (e) => {
+    if (joy.active && e.pointerId === joy.id) {
+      const rect = glCanvas.getBoundingClientRect();
+      joy.cx = e.clientX - rect.left;
+      joy.cy = e.clientY - rect.top;
+      const rx = joy.cx - joy.sx;
+      const ry = joy.cy - joy.sy;
+      const d = Math.hypot(rx, ry);
+      const maxR = 46;
+      if (d > 3) {
+        const s = Math.min(1, d / maxR);
+        joy.dx = (rx / d) * s;
+        joy.dy = (ry / d) * s;
+      } else {
+        joy.dx = 0;
+        joy.dy = 0;
+      }
+    }
+  });
+
+  const releaseJoy = (e) => {
+    if (joy.active && e.pointerId === joy.id) {
+      joy.active = false;
+      joy.dx = 0;
+      joy.dy = 0;
+    }
+  };
+  window.addEventListener('pointerup', releaseJoy);
+  window.addEventListener('pointercancel', releaseJoy);
+
+  function showOmen(txt) {
+    const el = document.getElementById('omen-alert');
+    el.textContent = txt;
+    el.style.opacity = '1';
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.style.opacity = '0'; }, 2100);
+  }
+
+  function triggerImpulse() {
+    if (player.dashCd > 0) return;
+    player.dashCd = player.dashMaxCd;
+    player.dashTime = 0.20;
+    player.invuln = 0.30;
+    shaderImpact = 0.85;
+    camShake = 11;
+    AudioFX.playMetallicBonk(true, false);
+
+    slashes.push({
+      type: 'ring',
+      x: player.x, y: player.y,
+      r: 10, maxR: 98 * player.sizeMult,
+      life: 1.0,
+      col: '#CFC7B8'
+    });
+
+    let counteredCharger = false;
+    for (const en of enemies) {
+      if (hypot(en.x - player.x, en.y - player.y) < 102 * player.sizeMult) {
+        if (en.kind === 'charger' && en.chargeState === 'DASH') {
+          counteredCharger = true;
+        }
+        inflictBonk(en, 20 * player.dmgMult, player.x, player.y, 560 * player.bonkMult, false);
+      }
+    }
+
+    if (counteredCharger) {
+      player.dashCd *= 0.35;
+      showOmen('CONTRE-FRACAS PARFAIT // RECHARGE RÉDUITE');
+    }
+  }
+
+  /* =========================================================================
+     9. ARCHÉTYPES D'ENNEMIS & LOGIQUE DE FRACAS MURAL (BONK)
+     ========================================================================= */
+  function spawnEnemy(forcedKind = null, isElite = false) {
+    const ang = Math.random() * TAU;
+    const dist = Math.max(vw, vh) * 0.58 + 50;
+    const ex = player.x + Math.cos(ang) * dist;
+    const ey = player.y + Math.sin(ang) * dist;
+
+    const scale = 1 + (timeSurvived / 32) + (player.level * 0.16);
+    const rRoll = Math.random();
+
+    let kind = forcedKind;
+    if (!kind) {
+      if (rRoll > 0.82 && timeSurvived > 15) kind = 'hexer';
+      else if (rRoll > 0.60 && timeSurvived > 8) kind = 'charger';
+      else if (rRoll > 0.35) kind = 'ironclad';
+      else kind = 'skitter';
+    }
+
+    const en = {
+      x: ex, y: ey,
+      vx: 0, vy: 0,
+      kbX: 0, kbY: 0,
+      kind,
+      isElite,
+      r: isElite ? 26 : 13,
+      hp: 24 * scale,
+      maxHp: 24 * scale,
+      speed: 105,
+      mass: 1.0,
+      armored: false,
+      xp: 2,
+      flash: 0,
+      rot: Math.random() * TAU,
+      aiTimer: 1.2 + Math.random(),
+      chargeState: 'IDLE',
+      chargeAng: 0
+    };
+
+    if (kind === 'skitter') {
+      en.r = 11;
+      en.hp = 16 * scale;
+      en.speed = 130 + Math.min(45, timeSurvived * 0.3);
+      en.mass = 0.75;
+      en.xp = 2;
+    } else if (kind === 'ironclad') {
+      en.r = 17;
+      en.hp = 48 * scale;
+      en.speed = 82;
+      en.mass = 1.25;
+      en.armored = true;
+      en.xp = 5;
+    } else if (kind === 'charger') {
+      en.r = 16;
+      en.hp = 40 * scale;
+      en.speed = 88;
+      en.mass = 1.15;
+      en.xp = 5;
+    } else if (kind === 'hexer') {
+      en.r = 15;
+      en.hp = 30 * scale;
+      en.speed = 75;
+      en.mass = 0.9;
+      en.xp = 6;
+    }
+
+    if (isElite) {
+      en.hp *= 3.8;
+      en.maxHp = en.hp;
+      en.armored = true;
+      en.xp = 18;
+    }
+
+    enemies.push(en);
+  }
+
+  function addPopup(x, y, txt, col = '#CFC7B8', big = false) {
+    popups.push({ x, y, vy: big ? -55 : -36, txt, col, big, life: 1.0 });
+  }
+
+  function addSplatter(x, y, count, col, spd = 1) {
+    for (let i = 0; i < count; i++) {
+      const a = Math.random() * TAU;
+      const v = (50 + Math.random() * 180) * spd;
+      particles.push({
+        x, y,
+        vx: Math.cos(a) * v,
+        vy: Math.sin(a) * v,
+        len: 4 + Math.random() * 10,
+        col,
+        life: 1.0
+      });
+    }
+  }
+
+  function inflictBonk(en, rawDmg, srcX, srcY, bonkForce, isWallSlam = false) {
+    let dmg = rawDmg;
+
+    if (en.armored && !isWallSlam) {
+      dmg = Math.max(1, Math.round(rawDmg * 0.15));
+      AudioFX.playMetallicBonk(false, true);
+      addPopup(en.x, en.y - 6, `BLINDÉ -${dmg}`, '#7A756E', false);
+    } else {
+      if (isWallSlam && en.armored) {
+        en.armored = false;
+        dmg = Math.round(rawDmg * 2.5);
+        addPopup(en.x, en.y - 18, `ARMURE BRISÉE! -${dmg}`, '#C90A1D', true);
+      } else if (isWallSlam) {
+        dmg = Math.round(rawDmg * 2.0);
+        addPopup(en.x, en.y - 14, `FRACAS! -${dmg}`, '#C90A1D', true);
+      } else {
+        addPopup(en.x, en.y - 6, `-${Math.round(dmg)}`, '#CFC7B8', false);
+      }
+    }
+
+    en.hp -= dmg;
+    en.flash = 0.11;
+
+    const dx = en.x - srcX;
+    const dy = en.y - srcY;
+    const d = hypot(dx, dy) || 1;
+    const push = bonkForce / en.mass;
+    en.kbX += (dx / d) * push;
+    en.kbY += (dy / d) * push;
+
+    addSplatter(en.x, en.y, isWallSlam ? 14 : 5, isWallSlam ? '#C90A1D' : '#8A847C', isWallSlam ? 1.4 : 0.8);
+
+    if (en.hp <= 0 && !en.dead) {
+      en.dead = true;
+      totalKills++;
+      decals.push({ x: en.x, y: en.y, r: en.r * 1.5, rot: Math.random() * TAU, kind: 'blood' });
+      if (decals.length > 160) decals.shift();
+      addSplatter(en.x, en.y, 14, '#7A040E', 1.3);
+      gems.push({ x: en.x, y: en.y, val: en.xp, r: en.isElite ? 8 : 4.5 });
+    }
+  }
+
+  /* =========================================================================
+     10. SIMULATION PHYSIQUE TEMPS RÉEL
+     ========================================================================= */
+  let spawnClock = 0;
+
+  function updateGame(dt) {
+    timeSurvived += dt;
+    autoSaveTimer += dt;
+    if (autoSaveTimer >= 3.0) {
+      autoSaveTimer = 0;
+      saveCurrentRunToSlot();
+    }
+
+    // 1. La Soif du Sceau
+    player.hp -= player.bleedRate * dt;
+    if (player.hp <= 0) {
+      player.hp = 0;
+      endRun();
+      return;
+    }
+
+    // 2. Déplacement
+    let mx = 0, my = 0;
+    if (keys['KeyW'] || keys['KeyZ'] || keys['ArrowUp']) my -= 1;
+    if (keys['KeyS'] || keys['ArrowDown']) my += 1;
+    if (keys['KeyA'] || keys['KeyQ'] || keys['ArrowLeft']) mx -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) mx += 1;
+
+    if (joy.active) {
+      mx = joy.dx;
+      my = joy.dy;
+    } else if (mx !== 0 || my !== 0) {
+      const l = hypot(mx, my);
+      mx /= l; my /= l;
+    }
+
+    if (hypot(mx, my) > 0.12) {
+      player.facing = Math.atan2(my, mx);
+    }
+
+    const boost = player.dashTime > 0 ? 3.2 : 1.0;
+    player.vx = mx * player.speed * boost;
+    player.vy = my * player.speed * boost;
+    player.x += player.vx * dt;
+    player.y += player.vy * dt;
+
+    if (player.dashTime > 0) player.dashTime -= dt;
+    if (player.dashCd > 0) player.dashCd = Math.max(0, player.dashCd - dt);
+    if (player.invuln > 0) player.invuln -= dt;
+
+    const pcx = Math.floor(player.x / CELL_W);
+    const pcy = Math.floor(player.y / CELL_W);
+    const localPillars = [];
+    const localShrines = [];
+
+    for (let gx = pcx - 1; gx <= pcx + 1; gx++) {
+      for (let gy = pcy - 1; gy <= pcy + 1; gy++) {
+        const c = getCell(gx, gy);
+        for (const p of c.pillars) if (!p.destroyed) localPillars.push(p);
+        if (c.shrine && !c.shrine.done) localShrines.push(c.shrine);
+      }
+    }
+
+    for (const p of localPillars) {
+      const dx = player.x - p.x;
+      const dy = player.y - p.y;
+      const d = hypot(dx, dy);
+      if (d < player.r + p.r && d > 0) {
+        player.x += (dx / d) * (player.r + p.r - d);
+        player.y += (dy / d) * (player.r + p.r - d);
+      }
+    }
+
+    for (const s of localShrines) {
+      if (hypot(player.x - s.x, player.y - s.y) < s.r) {
+        s.progress += dt * 42;
+        if (s.progress >= 100) {
+          s.done = true;
+          player.hp = Math.min(player.maxHp, player.hp + 35);
+          shaderImpact = 1.0;
+          camShake = 14;
+          AudioFX.playMetallicBonk(true, false);
+          showOmen('STÈLE PURIFIÉE // +35 SANG & MUTATION');
+          openTarotScreen();
+        }
+      } else {
+        s.progress = Math.max(0, s.progress - dt * 18);
+      }
+    }
+
+    // 3. Armes Automatiques
+    const w = player.weapons;
+
+    if (w.cleaver.level > 0) {
+      w.cleaver.timer -= dt;
+      const cd = (1.15 * player.cdrMult) / (1 + (w.cleaver.level - 1) * 0.15);
+      if (w.cleaver.timer <= 0) {
+        w.cleaver.timer = cd;
+        const reach = (82 + w.cleaver.level * 12) * player.sizeMult;
+        const dmg = (18 + w.cleaver.level * 9) * player.dmgMult;
+        const bonk = (480 + w.cleaver.level * 75) * player.bonkMult;
+
+        slashes.push({ type: 'arc', x: player.x, y: player.y, ang: player.facing, r: reach, life: 1.0 });
+        let hit = false;
+        for (const en of enemies) {
+          const dx = en.x - player.x;
+          const dy = en.y - player.y;
+          if (hypot(dx, dy) <= reach + en.r) {
+            const diff = Math.atan2(Math.sin(Math.atan2(dy, dx) - player.facing), Math.cos(Math.atan2(dy, dx) - player.facing));
+            if (Math.abs(diff) <= 1.25) {
+              inflictBonk(en, dmg, player.x, player.y, bonk, false);
+              hit = true;
+            }
+          }
+        }
+        if (hit) {
+          AudioFX.playMetallicBonk(false, false);
+          camShake = Math.max(camShake, 4);
+        }
+      }
+    }
+
+    if (w.needles.level > 0) {
+      w.needles.timer -= dt;
+      const cd = (0.88 * player.cdrMult) / (1 + (w.needles.level - 1) * 0.2);
+      if (w.needles.timer <= 0 && enemies.length > 0) {
+        w.needles.timer = cd;
+        const sorted = enemies.slice().sort((a, b) => hypot(a.x - player.x, a.y - player.y) - hypot(b.x - player.x, b.y - player.y));
+        const count = Math.min(sorted.length, w.needles.level);
+        for (let i = 0; i < count; i++) {
+          const t = sorted[i];
+          const a = Math.atan2(t.y - player.y, t.x - player.x);
+          needles.push({
+            x: player.x, y: player.y,
+            vx: Math.cos(a) * 520, vy: Math.sin(a) * 520,
+            ang: a,
+            dmg: (13 + w.needles.level * 5) * player.dmgMult,
+            bonk: 220 * player.bonkMult,
+            life: 0.95
+          });
+        }
+      }
+    }
+
+    if (w.anvil.level > 0) {
+      w.anvil.timer -= dt;
+      if (w.anvil.timer <= 0) {
+        w.anvil.timer = 3.0 * player.cdrMult;
+        const rad = (95 + w.anvil.level * 18) * player.sizeMult;
+        AudioFX.playMetallicBonk(true, false);
+        camShake = 10;
+        shaderImpact = 0.6;
+        slashes.push({ type: 'ring', x: player.x, y: player.y, r: 12, maxR: rad, life: 1.0, col: '#C90A1D' });
+        for (const en of enemies) {
+          if (hypot(en.x - player.x, en.y - player.y) <= rad + en.r) {
+            inflictBonk(en, (28 + w.anvil.level * 14) * player.dmgMult, player.x, player.y, 690 * player.bonkMult, false);
+          }
+        }
+      }
+    }
+
+    if (w.chains.level > 0) {
+      w.chains.timer -= dt;
+      if (w.chains.timer <= 0 && enemies.length > 0) {
+        w.chains.timer = 1.55 * player.cdrMult;
+        let cx = player.x, cy = player.y;
+        const visited = new Set();
+        for (let b = 0; b < 2 + w.chains.level * 2; b++) {
+          let best = null, bestD = 190;
+          for (const en of enemies) {
+            if (visited.has(en)) continue;
+            const d = hypot(en.x - cx, en.y - cy);
+            if (d < bestD) { bestD = d; best = en; }
+          }
+          if (!best) break;
+          visited.add(best);
+          slashes.push({ type: 'chain', x1: cx, y1: cy, x2: best.x, y2: best.y, life: 1.0 });
+          inflictBonk(best, (15 + w.chains.level * 6) * player.dmgMult, cx, cy, 290 * player.bonkMult, false);
+          cx = best.x; cy = best.y;
+        }
+      }
+    }
+
+    if (w.saw.level > 0) {
+      w.saw.angle += dt * 4.6;
+      const count = 2 + w.saw.level;
+      const orbitR = 50 * player.sizeMult;
+      for (let i = 0; i < count; i++) {
+        const a = w.saw.angle + (i / count) * TAU;
+        const bx = player.x + Math.cos(a) * orbitR;
+        const by = player.y + Math.sin(a) * orbitR;
+        for (const en of enemies) {
+          if (hypot(en.x - bx, en.y - by) < en.r + 12 && (!en._sawCd || en._sawCd <= 0)) {
+            en._sawCd = 0.25;
+            inflictBonk(en, (10 + w.saw.level * 4) * player.dmgMult, player.x, player.y, 340 * player.bonkMult, false);
+          }
+        }
+      }
+    }
+
+    for (let i = needles.length - 1; i >= 0; i--) {
+      const n = needles[i];
+      n.x += n.vx * dt;
+      n.y += n.vy * dt;
+      n.life -= dt;
+      for (const en of enemies) {
+        if (hypot(en.x - n.x, en.y - n.y) < en.r + 8) {
+          inflictBonk(en, n.dmg, n.x - n.vx * 0.04, n.y - n.vy * 0.04, n.bonk, false);
+          n.life = 0;
+          break;
+        }
+      }
+      if (n.life <= 0) needles.splice(i, 1);
+    }
+
+    for (let i = hazards.length - 1; i >= 0; i--) {
+      const h = hazards[i];
+      h.timer -= dt;
+      if (h.timer <= 0) {
+        slashes.push({ type: 'ring', x: h.x, y: h.y, r: 5, maxR: h.r, life: 1.0, col: '#C90A1D' });
+        if (hypot(player.x - h.x, player.y - h.y) < h.r + player.r && player.invuln <= 0) {
+          player.hp -= 22;
+          player.invuln = 0.4;
+          shaderImpact = 1.0;
+          camShake = 14;
+          AudioFX.playScreech();
+          showOmen('SCEAU D’EXÉCUTION SUBI // -22 SANG');
+        }
+        hazards.splice(i, 1);
+      }
+    }
+
+    spawnClock -= dt;
+    const interval = Math.max(0.18, 0.92 - timeSurvived * 0.005);
+    if (spawnClock <= 0 && enemies.length < 95) {
+      spawnClock = interval;
+      spawnEnemy(null, Math.random() < 0.04);
+    }
+
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      const en = enemies[i];
+      if (en.dead) {
+        enemies.splice(i, 1);
+        continue;
+      }
+
+      if (en.flash > 0) en.flash -= dt;
+      if (en._sawCd > 0) en._sawCd -= dt;
+      en.rot += dt * 1.1;
+
+      const kbSpeed = hypot(en.kbX, en.kbY);
+      const dxP = player.x - en.x;
+      const dyP = player.y - en.y;
+      const distP = hypot(dxP, dyP) || 1;
+
+      if (kbSpeed < 85) {
+        if (en.kind === 'skitter') {
+          const tx = player.x + player.vx * 0.38;
+          const ty = player.y + player.vy * 0.38;
+          const a = Math.atan2(ty - en.y, tx - en.x);
+          en.vx = Math.cos(a) * en.speed;
+          en.vy = Math.sin(a) * en.speed;
+        } else if (en.kind === 'charger') {
+          en.aiTimer -= dt;
+          if (en.chargeState === 'IDLE') {
+            en.vx = (dxP / distP) * en.speed * 0.6;
+            en.vy = (dyP / distP) * en.speed * 0.6;
+            if (en.aiTimer <= 0 && distP < 240) {
+              en.chargeState = 'WINDUP';
+              en.aiTimer = 0.55;
+              en.chargeAng = Math.atan2(dyP, dxP);
+            }
+          } else if (en.chargeState === 'WINDUP') {
+            en.vx = 0; en.vy = 0;
+            if (en.aiTimer <= 0) {
+              en.chargeState = 'DASH';
+              en.aiTimer = 0.48;
+            }
+          } else if (en.chargeState === 'DASH') {
+            en.vx = Math.cos(en.chargeAng) * 370;
+            en.vy = Math.sin(en.chargeAng) * 370;
+            if (en.aiTimer <= 0) {
+              en.chargeState = 'IDLE';
+              en.aiTimer = 1.8;
+            }
+          }
+        } else if (en.kind === 'hexer') {
+          const idealDist = 155;
+          const dir = distP < idealDist ? -0.6 : 1.0;
+          en.vx = (dxP / distP) * en.speed * dir;
+          en.vy = (dyP / distP) * en.speed * dir;
+          en.aiTimer -= dt;
+          if (en.aiTimer <= 0 && distP < 280) {
+            en.aiTimer = 3.2;
+            hazards.push({
+              x: player.x + player.vx * 0.25,
+              y: player.y + player.vy * 0.25,
+              r: 44,
+              timer: 1.35,
+              maxTimer: 1.35
+            });
+          }
+        } else {
+          en.vx = (dxP / distP) * en.speed;
+          en.vy = (dyP / distP) * en.speed;
+        }
+      } else {
+        en.vx *= 0.4;
+        en.vy *= 0.4;
+      }
+
+      en.x += (en.vx + en.kbX) * dt;
+      en.y += (en.vy + en.kbY) * dt;
+      en.kbX *= Math.pow(0.012, dt);
+      en.kbY *= Math.pow(0.012, dt);
+
+      // COLLISION MONOLITHE DE FER = FRACAS MURAL + SOIN
+      for (const p of localPillars) {
+        if (p.destroyed) continue;
+        const pdx = en.x - p.x;
+        const pdy = en.y - p.y;
+        const pd = hypot(pdx, pdy);
+        const minD = en.r + p.r;
+        if (pd < minD && pd > 0) {
+          en.x += (pdx / pd) * (minD - pd);
+          en.y += (pdy / pd) * (minD - pd);
+
+          if (kbSpeed > 175) {
+            totalWallSlams++;
+            const slamDmg = (34 + kbSpeed * 0.09) * player.dmgMult;
+            en.kbX = (pdx / pd) * 210;
+            en.kbY = (pdy / pd) * 210;
+
+            player.hp = Math.min(player.maxHp, player.hp + player.vampSlam);
+            addPopup(player.x, player.y - 18, `+${player.vampSlam} SANG`, '#C90A1D', false);
+
+            inflictBonk(en, slamDmg, p.x, p.y, 190, true);
+            AudioFX.playMetallicBonk(true, false);
+            shaderImpact = 0.9;
+            camShake = 13;
+            hitstop = 0.028;
+
+            p.hp -= slamDmg;
+            if (p.hp <= 0) {
+              p.destroyed = true;
+              decals.push({ x: p.x, y: p.y, r: p.r * 1.4, rot: 0, kind: 'crater' });
+              addSplatter(p.x, p.y, 20, '#CFC7B8', 1.5);
+            }
+            break;
+          }
+        }
+      }
+
+      if (distP < en.r + player.r - 2 && player.invuln <= 0) {
+        const hitDmg = en.isElite ? 24 : (en.kind === 'charger' && en.chargeState === 'DASH' ? 20 : 12);
+        player.hp -= hitDmg;
+        player.invuln = 0.42;
+        shaderImpact = 1.0;
+        camShake = 14;
+        AudioFX.playScreech();
+        inflictBonk(en, 4, player.x, player.y, 320, false);
+        if (player.hp <= 0) {
+          player.hp = 0;
+          endRun();
+          return;
+        }
+      }
+    }
+
+    for (let i = 0; i < enemies.length; i++) {
+      const a = enemies[i];
+      const aKb = hypot(a.kbX, a.kbY);
+      for (let j = i + 1; j < enemies.length; j++) {
+        const b = enemies[j];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const d = hypot(dx, dy);
+        const minD = a.r + b.r;
+        if (d < minD && d > 0.01) {
+          const ov = (minD - d) * 0.5;
+          const ux = dx / d, uy = dy / d;
+          a.x -= ux * ov; a.y -= uy * ov;
+          b.x += ux * ov; b.y += uy * ov;
+
+          if (aKb > 240 && hypot(b.kbX, b.kbY) < 90) {
+            b.kbX += a.kbX * 0.7;
+            b.kbY += a.kbY * 0.7;
+            inflictBonk(b, 14 * player.dmgMult, a.x, a.y, 150, true);
+          }
+        }
+      }
+    }
+
+    for (let i = gems.length - 1; i >= 0; i--) {
+      const g = gems[i];
+      const dx = player.x - g.x;
+      const dy = player.y - g.y;
+      const d = hypot(dx, dy);
+      if (d < 110) {
+        g.x += (dx / d) * 380 * dt;
+        g.y += (dy / d) * 380 * dt;
+        if (d < player.r + 10) {
+          player.xp += g.val;
+          gems.splice(i, 1);
+          if (player.xp >= player.xpNext) {
+            player.xp -= player.xpNext;
+            player.level++;
+            player.xpNext = Math.floor(player.xpNext * 1.42 + 5);
+            saveCurrentRunToSlot();
+            openTarotScreen();
+          }
+        }
+      }
+    }
+
+    for (let i = slashes.length - 1; i >= 0; i--) {
+      const s = slashes[i];
+      s.life -= dt * 4.8;
+      if (s.type === 'ring') s.r += (s.maxR - s.r) * 14 * dt;
+      if (s.life <= 0) slashes.splice(i, 1);
+    }
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      p.vx *= 0.87; p.vy *= 0.87;
+      p.life -= dt * 2.2;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+    for (let i = popups.length - 1; i >= 0; i--) {
+      const pp = popups[i];
+      pp.y += pp.vy * dt;
+      pp.vy *= 0.9;
+      pp.life -= dt * 1.5;
+      if (pp.life <= 0) popups.splice(i, 1);
+    }
+
+    shaderImpact = Math.max(0, shaderImpact - dt * 2.8);
+    camShake = Math.max(0, camShake - dt * 30);
+    syncHUD();
+  }
+
+  /* =========================================================================
+     11. RENDU DE LA SCÈNE & TRANSMISSION AU SHADER WEBGL
+     ========================================================================= */
+  function renderScene(time) {
+    ctx.fillStyle = '#040404';
+    ctx.fillRect(0, 0, vw, vh);
+
+    ctx.save();
+    const sx = (Math.random() - 0.5) * camShake * 2;
+    const sy = (Math.random() - 0.5) * camShake * 2;
+    const camX = player.x - vw * 0.5 + sx;
+    const camY = player.y - vh * 0.46 + sy;
+    ctx.translate(-camX, -camY);
+
+    const gridStep = 44;
+    const gx0 = Math.floor(camX / gridStep) * gridStep;
+    const gy0 = Math.floor(camY / gridStep) * gridStep;
+    ctx.strokeStyle = 'rgba(207, 199, 184, 0.08)';
+    ctx.lineWidth = 1;
+    for (let x = gx0; x < camX + vw + gridStep; x += gridStep) {
+      for (let y = gy0; y < camY + vh + gridStep; y += gridStep) {
+        const h = hash2D(x / gridStep, y / gridStep);
+        if (h > 0.72) {
+          ctx.beginPath();
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + gridStep * 0.8, y + (h - 0.5) * 35);
+          ctx.stroke();
+        }
+      }
+    }
+
+    const minCX = Math.floor(camX / CELL_W) - 1;
+    const maxCX = Math.floor((camX + vw) / CELL_W) + 1;
+    const minCY = Math.floor(camY / CELL_W) - 1;
+    const maxCY = Math.floor((camY + vh) / CELL_W) + 1;
+
+    for (let cx = minCX; cx <= maxCX; cx++) {
+      for (let cy = minCY; cy <= maxCY; cy++) {
+        const c = getCell(cx, cy);
+        if (c.runeRing) {
+          const rr = c.runeRing;
+          ctx.save();
+          ctx.translate(rr.x, rr.y);
+          ctx.rotate(rr.rot);
+          ctx.strokeStyle = 'rgba(207, 199, 184, 0.09)';
+          ctx.beginPath();
+          ctx.arc(0, 0, rr.r, 0, TAU);
+          for (let i = 0; i < rr.symmetry; i++) {
+            const a = (i / rr.symmetry) * TAU;
+            ctx.moveTo(Math.cos(a) * rr.r * 1.2, Math.sin(a) * rr.r * 1.2);
+            ctx.lineTo(Math.cos(a + 2.1) * rr.r, Math.sin(a + 2.1) * rr.r);
+          }
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        if (c.shrine && !c.shrine.done) {
+          const s = c.shrine;
+          ctx.save();
+          ctx.translate(s.x, s.y);
+          ctx.strokeStyle = '#C90A1D';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.arc(0, 0, s.r, time * 0.5, time * 0.5 + TAU);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          if (s.progress > 0) {
+            ctx.strokeStyle = '#CFC7B8';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(0, 0, s.r - 4, -Math.PI / 2, -Math.PI / 2 + (s.progress / 100) * TAU);
+            ctx.stroke();
+          }
+
+          ctx.fillStyle = '#C90A1D';
+          for (let k = 0; k < 4; k++) {
+            ctx.save();
+            ctx.rotate((k / 4) * TAU + time * 0.6);
+            drawBarbedSpike(ctx, 32, 7);
+            ctx.restore();
+          }
+          ctx.restore();
+        }
+      }
+    }
+
+    for (const d of decals) {
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(d.rot);
+      if (d.kind === 'blood') {
+        ctx.fillStyle = 'rgba(155, 6, 20, 0.55)';
+        drawRazorArc(ctx, -d.r, 0, 0, -d.r * 0.3, d.r * 1.2, 0, d.r * 0.45);
+      } else {
+        ctx.strokeStyle = 'rgba(207, 199, 184, 0.3)';
+        ctx.beginPath();
+        ctx.moveTo(-d.r, -d.r * 0.5); ctx.lineTo(d.r, d.r * 0.5);
+        ctx.moveTo(d.r * 0.5, -d.r); ctx.lineTo(-d.r * 0.5, d.r);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    for (const h of hazards) {
+      ctx.save();
+      ctx.translate(h.x, h.y);
+      const ratio = 1 - h.timer / h.maxTimer;
+      ctx.strokeStyle = '#C90A1D';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(0, 0, h.r, 0, TAU);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(201, 10, 29, 0.28)';
+      ctx.beginPath();
+      ctx.arc(0, 0, h.r * ratio, 0, TAU);
+      ctx.fill();
+
+      ctx.rotate(time * 3);
+      ctx.fillStyle = '#C90A1D';
+      for (let i = 0; i < 4; i++) {
+        ctx.rotate(TAU / 4);
+        drawBarbedSpike(ctx, h.r * 0.95, 4);
+      }
+      ctx.restore();
+    }
+
+    for (let cx = minCX; cx <= maxCX; cx++) {
+      for (let cy = minCY; cy <= maxCY; cy++) {
+        const c = getCell(cx, cy);
+        for (const p of c.pillars) {
+          if (p.destroyed) continue;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = '#0E0D0C';
+          ctx.strokeStyle = '#CFC7B8';
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          for (let i = 0; i < p.barbs * 2; i++) {
+            const a = (i / (p.barbs * 2)) * TAU;
+            const rad = i % 2 === 0 ? p.r * 1.28 : p.r * 0.62;
+            if (i === 0) ctx.moveTo(Math.cos(a) * rad, Math.sin(a) * rad);
+            else ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+          }
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+    }
+
+    for (const g of gems) {
+      ctx.save();
+      ctx.translate(g.x, g.y);
+      ctx.fillStyle = g.val > 10 ? '#C90A1D' : '#CFC7B8';
+      drawBarbedSpike(ctx, g.r * 2.2, g.r * 0.8);
+      ctx.rotate(Math.PI);
+      drawBarbedSpike(ctx, g.r * 2.2, g.r * 0.8);
+      ctx.restore();
+    }
+
+    for (const en of enemies) {
+      ctx.save();
+      ctx.translate(en.x, en.y);
+
+      if (en.kind === 'charger' && en.chargeState === 'WINDUP') {
+        ctx.save();
+        ctx.rotate(en.chargeAng);
+        ctx.strokeStyle = '#C90A1D';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(250, 0);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      const col = en.flash > 0 ? '#FFFFFF' : (en.isElite || en.kind === 'charger' ? '#C90A1D' : '#CFC7B8');
+      ctx.fillStyle = col;
+      ctx.strokeStyle = col;
+
+      if (en.kind === 'skitter') {
+        const a = Math.atan2(player.y - en.y, player.x - en.x);
+        ctx.rotate(a + Math.PI / 2);
+        drawBarbedSpike(ctx, en.r * 1.8, en.r * 0.6);
+        drawRazorArc(ctx, 0, 0, en.r * 1.2, -en.r * 0.4, en.r * 0.9, en.r * 1.2, 2.2);
+        drawRazorArc(ctx, 0, 0, -en.r * 1.2, -en.r * 0.4, -en.r * 0.9, en.r * 1.2, 2.2);
+      } else if (en.kind === 'ironclad') {
+        ctx.rotate(en.rot);
+        for (let k = 0; k < 4; k++) {
+          ctx.rotate(TAU / 4);
+          drawBarbedSpike(ctx, en.r * 1.5, en.r * 0.5);
+        }
+        if (en.armored) {
+          ctx.strokeStyle = '#CFC7B8';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, en.r * 1.05, 0, TAU);
+          ctx.stroke();
+        }
+      } else {
+        ctx.rotate(en.rot);
+        const pts = en.isElite ? 8 : 5;
+        for (let k = 0; k < pts; k++) {
+          ctx.rotate(TAU / pts);
+          drawBarbedSpike(ctx, en.r * 1.65, en.r * 0.42);
+        }
+      }
+      ctx.restore();
+    }
+
+    if (player.weapons.saw.level > 0) {
+      const count = 2 + player.weapons.saw.level;
+      const orbitR = 50 * player.sizeMult;
+      for (let i = 0; i < count; i++) {
+        const a = player.weapons.saw.angle + (i / count) * TAU;
+        ctx.save();
+        ctx.translate(player.x + Math.cos(a) * orbitR, player.y + Math.sin(a) * orbitR);
+        ctx.rotate(a + time * 9);
+        ctx.fillStyle = '#CFC7B8';
+        for (let k = 0; k < 3; k++) {
+          ctx.rotate(TAU / 3);
+          drawBarbedSpike(ctx, 16, 4.5);
+        }
+        ctx.restore();
+      }
+    }
+
+    // Avatar du Joueur (Rotatif sur le menu d'accueil)
+    ctx.save();
+    ctx.translate(player.x, player.y);
+    const faceAngle = state === 'HOME' ? time * 0.8 : (player.facing + Math.PI / 2);
+    ctx.rotate(faceAngle);
+    ctx.fillStyle = player.invuln > 0 ? '#C90A1D' : '#CFC7B8';
+
+    drawBarbedSpike(ctx, 29, 7.5);
+    ctx.save();
+    ctx.rotate(Math.PI);
+    drawBarbedSpike(ctx, 18, 5);
+    ctx.restore();
+
+    const pulse = Math.sin(time * 10) * 3;
+    drawRazorArc(ctx, 0, -4, 24 + pulse, -18, 29, 19, 4.0);
+    drawRazorArc(ctx, 0, -4, -24 - pulse, -18, -29, 19, 4.0);
+    ctx.fillStyle = '#C90A1D';
+    ctx.beginPath();
+    ctx.arc(0, -2, 3.5, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+
+    for (const n of needles) {
+      ctx.save();
+      ctx.translate(n.x, n.y);
+      ctx.rotate(n.ang + Math.PI / 2);
+      ctx.fillStyle = '#CFC7B8';
+      drawBarbedSpike(ctx, 25, 4);
+      ctx.restore();
+    }
+
+    for (const s of slashes) {
+      ctx.save();
+      ctx.globalAlpha = clamp(s.life, 0, 1);
+      if (s.type === 'arc') {
+        ctx.translate(s.x, s.y);
+        ctx.rotate(s.ang);
+        ctx.fillStyle = '#CFC7B8';
+        drawRazorArc(ctx, 0, -s.r * 0.95, s.r * 1.15, 0, 0, s.r * 0.95, 12 * s.life);
+        ctx.strokeStyle = '#C90A1D';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, s.r, -1.1, 1.1);
+        ctx.stroke();
+      } else if (s.type === 'ring') {
+        ctx.strokeStyle = s.col;
+        ctx.lineWidth = 3 * s.life;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, TAU);
+        ctx.stroke();
+      } else if (s.type === 'chain') {
+        ctx.strokeStyle = '#CFC7B8';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(s.x1, s.y1);
+        ctx.lineTo((s.x1 + s.x2) * 0.5 + (Math.random() - 0.5) * 16, (s.y1 + s.y2) * 0.5 + (Math.random() - 0.5) * 16);
+        ctx.lineTo(s.x2, s.y2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    for (const p of particles) {
+      ctx.save();
+      ctx.globalAlpha = clamp(p.life, 0, 1);
+      ctx.strokeStyle = p.col;
+      ctx.lineWidth = 1.8;
+      const a = Math.atan2(p.vy, p.vx);
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - Math.cos(a) * p.len, p.y - Math.sin(a) * p.len);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    for (const pp of popups) {
+      ctx.save();
+      ctx.globalAlpha = clamp(pp.life, 0, 1);
+      ctx.font = pp.big ? '900 14px "Courier New", monospace' : 'bold 10px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#040404';
+      ctx.fillText(pp.txt, pp.x + 1, pp.y + 1);
+      ctx.fillStyle = pp.col;
+      ctx.fillText(pp.txt, pp.x, pp.y);
+      ctx.restore();
+    }
+
+    ctx.restore();
+
+    if (joy.active && state === 'PLAY') {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(207, 199, 184, 0.5)';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(joy.sx, joy.sy, 42, 0, TAU);
+      ctx.moveTo(joy.sx - 48, joy.sy); ctx.lineTo(joy.sx + 48, joy.sy);
+      ctx.moveTo(joy.sx, joy.sy - 48); ctx.lineTo(joy.sx, joy.sy + 48);
+      ctx.stroke();
+
+      ctx.fillStyle = '#C90A1D';
+      ctx.beginPath();
+      ctx.arc(joy.cx, joy.cy, 7, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    if (gl) {
+      gl.bindTexture(gl.TEXTURE_2D, glTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offCanvas);
+      gl.uniform2f(uLocs.res, vw, vh);
+      gl.uniform1f(uLocs.time, time);
+      gl.uniform1f(uLocs.impact, shaderImpact);
+      gl.uniform1f(uLocs.bleedRatio, clamp(1.0 - (player.hp / player.maxHp), 0, 1));
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    } else {
+      const fb = glCanvas.getContext('2d');
+      if (fb) fb.drawImage(offCanvas, 0, 0);
+    }
+  }
+
+  /* =========================================================================
+     12. SYNCHRONISATION HUD, LEVEL UP & FIN DE PARTIE
+     ========================================================================= */
+  function syncHUD() {
+    document.getElementById('xp-bar').style.width = `${clamp((player.xp / player.xpNext) * 100, 0, 100)}%`;
+    document.getElementById('ui-lvl').textContent = `SCEAU // NV.${player.level}`;
+    document.getElementById('ui-xp').textContent = `MERCURE: ${player.xp}/${player.xpNext}`;
+
+    document.getElementById('ui-hp-txt').textContent = `${Math.ceil(player.hp)}/${player.maxHp}`;
+    document.getElementById('ui-bleed').textContent = `-${player.bleedRate.toFixed(2)}/s`;
+    document.getElementById('hp-bar').style.width = `${clamp((player.hp / player.maxHp) * 100, 0, 100)}%`;
+
+    document.getElementById('ui-slot-lbl').textContent = `SLOT ${['I','II','III'][activeSlotIndex]}`;
+    document.getElementById('ui-time').textContent = formatMMSS(timeSurvived);
+    document.getElementById('ui-slams').textContent = `${totalKills} // ${totalWallSlams}`;
+
+    document.getElementById('impulse-cd-overlay').style.height = `${(player.dashCd / player.dashMaxCd) * 100}%`;
+
+    const labels = { cleaver: 'FAUCHEUSE', needles: 'AIGUILLES', anvil: 'PRESSE', chains: 'CHAÎNES', saw: 'ROUE' };
+    document.getElementById('ui-arsenal').innerHTML = Object.keys(player.weapons)
+      .filter(k => player.weapons[k].level > 0)
+      .map(k => `<div class="wpn-tag">${labels[k]} <b>${player.weapons[k].level}</b></div>`)
+      .join('');
+  }
+
+  function openTarotScreen() {
+    state = 'LEVELUP';
+    hideAllScreens();
+    const box = document.getElementById('tarot-container');
+    box.innerHTML = '';
+
+    const picks = CURSED_TAROTS.slice().sort(() => Math.random() - 0.5).slice(0, 3);
+    picks.forEach((t, i) => {
+      const card = document.createElement('div');
+      card.className = 'tarot-card';
+      card.innerHTML = `
+        <div class="tarot-icon">
+          <svg width="36" height="36" viewBox="0 0 40 40">
+            <circle cx="20" cy="20" r="16" fill="none" stroke="#C90A1D" stroke-width="1.2"/>
+            <polygon points="20,2 24,20 20,38 16,20" fill="#CFC7B8"/>
+            <line x1="4" y1="${10 + i * 8}" x2="36" y2="${30 - i * 8}" stroke="#CFC7B8" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="tarot-info">
+          <div class="tarot-top">
+            <span class="tarot-name">${t.title}</span>
+            <span class="tarot-tag">${t.tag}</span>
+          </div>
+          <div class="tarot-boon">${t.boon}</div>
+          <div class="tarot-curse">${t.curse}</div>
+        </div>
+      `;
+      bindTap(card, () => {
+        t.apply();
+        hideAllScreens();
+        state = 'PLAY';
+        shaderImpact = 0.7;
+        AudioFX.playMetallicBonk(true, false);
+        saveCurrentRunToSlot();
+        syncHUD();
+      });
+      box.appendChild(card);
+    });
+
+    document.getElementById('screen-levelup').classList.add('active');
+  }
+
+  function endRun() {
+    state = 'OVER';
+    clearActiveRunOnDeath();
+    AudioFX.playScreech();
+    hideAllScreens();
+
+    const slot = saveSlots[activeSlotIndex];
+    document.getElementById('gameover-stats').innerHTML = `
+      • <b style="color:var(--bone)">SAUVEGARDE :</b> SCEAU ${['I','II','III'][activeSlotIndex]} (RECORD : ${formatMMSS(slot.bestTime)})<br>
+      • <b style="color:var(--bone)">DURÉE DE SURVIE :</b> ${formatMMSS(timeSurvived)}<br>
+      • <b style="color:var(--bone)">MUTATION ATTEINTE :</b> Niveau ${player.level}<br>
+      • <b style="color:var(--bone)">ENTITÉS PURGÉES :</b> ${totalKills}<br>
+      • <b style="color:var(--artery)">FRACAS MURAUX (WALL-SLAMS) :</b> ${totalWallSlams}
+    `;
+    document.getElementById('screen-gameover').classList.add('active');
+  }
+
+  // Sauvegarde automatique si l'utilisateur quitte l'onglet ou verrouille son téléphone
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && state === 'PLAY') {
+      openPauseMenu();
+    }
+  });
+
+  /* =========================================================================
+     13. DÉMARRAGE DE LA BOUCLE MAÎTRESSE
+     ========================================================================= */
+  initWebGL();
+  resizeViewport();
+  window.addEventListener('resize', resizeViewport);
+  loadAllSlots();
+  renderHomeSlots();
+  syncHUD();
+
+  let prevNow = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - prevNow) / 1000);
+    prevNow = now;
+
+    if (state === 'PLAY') {
+      if (hitstop > 0) hitstop -= dt;
+      else updateGame(dt);
+    }
+
+    renderScene(now / 1000);
+    requestAnimationFrame(loop);
+  }
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
