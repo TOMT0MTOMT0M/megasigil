@@ -1452,8 +1452,33 @@
   const MAX_SHOPS_POOL = 6;
   const MAX_LOOT_POOL = 220;
   const MAX_PROJ_POOL = 95;
-  const MAX_PARTICLES_POOL = 300;
-  const MAX_SLASHES_POOL = 36;
+  const MAX_PARTICLES_POOL = 900;
+  const MAX_SLASHES_POOL = 64;
+
+  // Vitesse exponentielle des ennemis (style Megabonk) : mult = exp(t / TAU), plafonnée
+  const ENEMY_SPEED_TAU = 170;
+  const ENEMY_SPEED_CAP = 4.5;
+  let enemySpeedMult = 1;
+  let enemySpeedTier = 1;
+
+  let verminGlowInstanced = null;
+  let playerAuraMesh = null;
+  let playerAuraWide = null;
+  let playerRingMesh = null;
+
+  // Texture de halo radial (dégradé) pour les lueurs additives sous les entités
+  function makeGlowTexture() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grd.addColorStop(0.0, 'rgba(255,255,255,1)');
+    grd.addColorStop(0.35, 'rgba(255,255,255,0.45)');
+    grd.addColorStop(1.0, 'rgba(255,255,255,0)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  }
 
   let verminInstancedMesh = null;
   let particleInstancedMesh = null;
@@ -1468,6 +1493,7 @@
   const slashMeshes = [];
   const relicMeshes = [];
   const dummyObj = new THREE.Object3D();
+  const partColor = new THREE.Color();
 
   function createCybersigilSpikeGeo(len = 24, width = 6, depth = 4) {
     const shape = new THREE.Shape();
@@ -1570,11 +1596,26 @@
       vec3 cB = texture2D(tDiffuse, uv - vec2(chr, 0.0)).rgb;
       vec3 col = vec3(cR.r, cG.g, cB.b);
 
-      float grain = (hash(uv * uRes + vec2(uTime * 53.0, -uTime * 29.0)) - 0.5) * 0.075;
-      float dither = (bayer4(gl_FragCoord.xy * 0.5) - 0.5) * 0.09;
+      // Bloom léger : halo des pixels brillants (armes, étincelles, lueurs)
+      vec2 px = 3.2 / uRes;
+      vec3 bl = vec3(0.0);
+      bl += texture2D(tDiffuse, uv + vec2( px.x, 0.0)).rgb;
+      bl += texture2D(tDiffuse, uv + vec2(-px.x, 0.0)).rgb;
+      bl += texture2D(tDiffuse, uv + vec2(0.0,  px.y)).rgb;
+      bl += texture2D(tDiffuse, uv + vec2(0.0, -px.y)).rgb;
+      bl += texture2D(tDiffuse, uv + px * 2.0).rgb;
+      bl += texture2D(tDiffuse, uv - px * 2.0).rgb;
+      bl += texture2D(tDiffuse, uv + vec2( px.x, -px.y) * 2.0).rgb;
+      bl += texture2D(tDiffuse, uv + vec2(-px.x,  px.y) * 2.0).rgb;
+      bl *= 0.125;
+      col += max(bl - 0.42, 0.0) * 0.95;
+      col *= 1.14;
+
+      float grain = (hash(uv * uRes + vec2(uTime * 53.0, -uTime * 29.0)) - 0.5) * 0.05;
+      float dither = (bayer4(gl_FragCoord.xy * 0.5) - 0.5) * 0.07;
       col += grain + dither;
 
-      float vig = smoothstep(1.62, 0.38, r2);
+      float vig = smoothstep(2.05, 0.5, r2);
       col *= vig;
       col += (1.0 - vig) * uBleed * (0.5 + 0.5 * sin(uTime * 9.0)) * vec3(0.50, 0.0, 0.04);
 
@@ -1607,19 +1648,19 @@
     });
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x030303);
-    scene.fog = new THREE.FogExp2(0x030303, 0.0010);
+    scene.background = new THREE.Color(0x070606);
+    scene.fog = new THREE.FogExp2(0x070606, 0.00045);
 
     camera = new THREE.PerspectiveCamera(54, vw / vh, 10, 2200);
 
-    const ambLight = new THREE.AmbientLight(0x484440, 1.35);
+    const ambLight = new THREE.AmbientLight(0x6A625A, 1.9);
     scene.add(ambLight);
 
-    const dirLight = new THREE.DirectionalLight(0xFFFFFF, 1.8);
+    const dirLight = new THREE.DirectionalLight(0xFFFFFF, 2.1);
     dirLight.position.set(160, 480, 220);
     scene.add(dirLight);
 
-    const bloodLight = new THREE.PointLight(0xFF0022, 2.4, 420);
+    const bloodLight = new THREE.PointLight(0xFF0022, 3.2, 520);
     bloodLight.position.set(0, 55, 0);
     scene.add(bloodLight);
     scene._bloodLight = bloodLight;
@@ -1634,15 +1675,47 @@
 
     const gridGeo = new THREE.PlaneGeometry(2400, 2400, 48, 48);
     gridGeo.rotateX(-Math.PI / 2);
-    const gridMat = new THREE.MeshBasicMaterial({ color: 0x141312, wireframe: true });
+    const gridMat = new THREE.MeshBasicMaterial({ color: 0x3A3330, wireframe: true });
     groundGridMesh = new THREE.Mesh(gridGeo, gridMat);
     scene.add(groundGridMesh);
+
+    const glowTex = makeGlowTexture();
+    scene.userData.glowTex = glowTex;
 
     playerGroup = new THREE.Group();
     const coreGeo = createCybersigilSpikeGeo(26, 10, 5);
     playerCoreMesh = new THREE.Mesh(coreGeo, matPureWhite);
     playerCoreMesh.position.y = 12;
+    playerCoreMesh.scale.set(1.25, 1.25, 1.25);
     playerGroup.add(playerCoreMesh);
+
+    // Aura blanc-or + large lueur ambiante + anneau net : le joueur se détache toujours des ennemis rouges
+    const auraGeo = new THREE.PlaneGeometry(1, 1);
+    auraGeo.rotateX(-Math.PI / 2);
+    playerAuraMesh = new THREE.Mesh(auraGeo, new THREE.MeshBasicMaterial({
+      map: glowTex, color: 0xFFE9B0, transparent: true, opacity: 0.85,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    }));
+    playerAuraMesh.position.y = 0.8;
+    playerAuraMesh.scale.set(120, 1, 120);
+    playerGroup.add(playerAuraMesh);
+
+    playerAuraWide = new THREE.Mesh(auraGeo, new THREE.MeshBasicMaterial({
+      map: glowTex, color: 0x8A1A28, transparent: true, opacity: 0.35,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    }));
+    playerAuraWide.position.y = 0.4;
+    playerAuraWide.scale.set(440, 1, 440);
+    playerGroup.add(playerAuraWide);
+
+    const ringGeo = new THREE.RingGeometry(21, 24, 48);
+    ringGeo.rotateX(-Math.PI / 2);
+    playerRingMesh = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
+      color: 0xFFFFFF, transparent: true, opacity: 0.9, side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    }));
+    playerRingMesh.position.y = 1.2;
+    playerGroup.add(playerRingMesh);
 
     const playerSigilTex = SigilForge.getThreeTexture('BOSS', 777, '#FFFFFF', '#FF0022');
     const haloGeo = new THREE.PlaneGeometry(68, 68);
@@ -1698,6 +1771,16 @@
     verminInstancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     scene.add(verminInstancedMesh);
 
+    const verminGlowGeo = new THREE.PlaneGeometry(52, 52);
+    verminGlowGeo.rotateX(-Math.PI / 2);
+    verminGlowInstanced = new THREE.InstancedMesh(verminGlowGeo, new THREE.MeshBasicMaterial({
+      map: glowTex, color: 0xFF1030, transparent: true, opacity: 0.55,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    }), MAX_VERMIN_INSTANCES);
+    verminGlowInstanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    verminGlowInstanced.frustumCulled = false;
+    scene.add(verminGlowInstanced);
+
     const eliteGeo = createStarSigilGeo(4, 18, 4, 22);
     const eliteSigilTex = SigilForge.getThreeTexture('BOSS', 666, '#D8D2C7', '#FF0022');
     const elitePlaneGeo = new THREE.PlaneGeometry(54, 54);
@@ -1714,14 +1797,25 @@
     for (let i = 0; i < MAX_ELITES_POOL; i++) {
       const grp = new THREE.Group();
       const body = new THREE.Mesh(eliteGeo, matMatteEnemy.clone());
+      const outline = new THREE.Mesh(eliteGeo, new THREE.MeshBasicMaterial({ color: 0xFF0022, side: THREE.BackSide }));
+      outline.scale.set(1.22, 1.22, 1.22);
+      const glow = new THREE.Mesh(auraGeo, new THREE.MeshBasicMaterial({
+        map: glowTex, color: 0xFF1030, transparent: true, opacity: 0.9,
+        blending: THREE.AdditiveBlending, depthWrite: false
+      }));
+      glow.position.y = 0.9;
+      glow.scale.set(95, 1, 95);
       const sigilFloor = new THREE.Mesh(elitePlaneGeo, elitePlaneMat);
       sigilFloor.position.y = 1.5;
       const armor = new THREE.Mesh(armorRingGeo, matAegis);
       armor.position.y = 12;
+      grp.add(glow);
+      grp.add(outline);
       grp.add(body);
       grp.add(sigilFloor);
       grp.add(armor);
       grp._body = body;
+      grp._glow = glow;
       grp._sigil = sigilFloor;
       grp._armor = armor;
       grp.visible = false;
@@ -1777,7 +1871,7 @@
     const slashGeo = new THREE.RingGeometry(16, 24, 28);
     slashGeo.rotateX(-Math.PI / 2);
     for (let i = 0; i < MAX_SLASHES_POOL; i++) {
-      const m = new THREE.Mesh(slashGeo, new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true }));
+      const m = new THREE.Mesh(slashGeo, new THREE.MeshBasicMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
       m.visible = false;
       scene.add(m);
       slashMeshes.push(m);
@@ -1802,10 +1896,22 @@
     }
 
     const partGeo = new THREE.TetrahedronGeometry(3.6, 0);
-    const partMat = new THREE.MeshBasicMaterial({ color: 0xFF0022 });
+    const partMat = new THREE.MeshBasicMaterial({
+      color: 0xFFFFFF, transparent: true, opacity: 0.95,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    });
     particleInstancedMesh = new THREE.InstancedMesh(partGeo, partMat, MAX_PARTICLES_POOL);
     particleInstancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    const partColArr = new Float32Array(MAX_PARTICLES_POOL * 3).fill(1);
+    particleInstancedMesh.instanceColor = new THREE.InstancedBufferAttribute(partColArr, 3);
+    particleInstancedMesh.instanceColor.setUsage(THREE.DynamicDrawUsage);
     scene.add(particleInstancedMesh);
+
+    // Les InstancedMesh r128 n'ont pas de bounding sphere par instance : sans ça ils sont cullés loin de l'origine
+    verminInstancedMesh.frustumCulled = false;
+    lootMercInstanced.frustumCulled = false;
+    lootGoldInstanced.frustumCulled = false;
+    particleInstancedMesh.frustumCulled = false;
 
     postScene = new THREE.Scene();
     postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -2015,6 +2121,22 @@
     player.dashCharges--;
     if (player.dashCd <= 0) player.dashCd = player.dashMaxCd;
     AudioFX.playDashWhoosh();
+
+    // Onde de choc d'impulsion : anneau, étincelles, repousse la nuée proche
+    slashes.push({ x: player.x, y: player.y, r: 10, maxR: 130, life: 1.0, col: 0xFFFFFF, decay: 3.2, spd: 10 });
+    for (let i = 0; i < 18; i++) {
+      const a = (i / 18) * TAU, v = 200 + Math.random() * 220;
+      addSpark(player.x, player.y, 8, Math.cos(a) * v, Math.sin(a) * v, 40 + Math.random() * 60, i % 2 ? 0xFFFFFF : 0xE5B84B, 2.4, 1.1);
+    }
+    shaderImpact = Math.max(shaderImpact, 0.35);
+    camShake = Math.max(camShake, 4);
+    for (const v of vermin) {
+      const vx = v.x - player.x, vy = v.y - player.y, vd = hypot(vx, vy) || 1;
+      if (vd < 120) { v.x += (vx / vd) * 70; v.y += (vy / vd) * 70; }
+    }
+    for (const en of enemies) {
+      if (hypot(en.x - player.x, en.y - player.y) < 130 + en.r) inflictBonk(en, 10 * player.dmgMult, player.x, player.y, 360 * player.bonkMult, false);
+    }
   }
 
   /* =========================================================================
@@ -2140,6 +2262,124 @@
     }
   }
 
+  // Étincelle additive pilotable (couleur, durée de vie, taille, gravité)
+  function addSpark(x, y, z, vx, vy, vz, col, decay = 2.2, size = 1, grav = 280) {
+    if (particles.length >= MAX_PARTICLES_POOL) particles.shift();
+    particles.push({ x, y, z, vx, vy, vz, col, life: 1.0, decay, size, grav });
+  }
+
+  // Explosion "ultra épique" : anneaux de choc concentriques, gerbe radiale blanc/rouge/or, colonne ascendante
+  function epicBurst(x, y, s = 1, flash = 0.6) {
+    slashes.push({ x, y, r: 8, maxR: 110 * s, life: 1.0, col: 0xFFFFFF, decay: 2.4, spd: 9 });
+    slashes.push({ x, y, r: 8, maxR: 190 * s, life: 1.0, col: 0xFF0022, decay: 1.9, spd: 6 });
+    slashes.push({ x, y, r: 8, maxR: 280 * s, life: 1.0, col: 0xE5B84B, decay: 1.5, spd: 4 });
+    const cols = [0xFFFFFF, 0xFF0022, 0xE5B84B, 0xFF5A3C];
+    const n = Math.floor(46 * s);
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + Math.random() * 0.2;
+      const v = 240 + Math.random() * 380 * s;
+      addSpark(x, y, 8 + Math.random() * 10, Math.cos(a) * v, Math.sin(a) * v, 40 + Math.random() * 160,
+        cols[i % cols.length], 1.2 + Math.random() * 0.8, 1.2 + Math.random() * 0.9);
+    }
+    for (let i = 0; i < Math.floor(16 * s); i++) {
+      const a = Math.random() * TAU, v = Math.random() * 60;
+      addSpark(x, y, 4, Math.cos(a) * v, Math.sin(a) * v, 260 + Math.random() * 360,
+        i % 2 ? 0xE5B84B : 0xFFFFFF, 0.9, 1.4, 340);
+    }
+    shaderImpact = Math.max(shaderImpact, flash);
+    camShake = Math.max(camShake, 12 * s);
+  }
+
+  // Apparition d'un ennemi (Tiers 2/3/4) : vitesse de base, mise à l'échelle exponentielle appliquée en simulation
+  function spawnEnemy(kind = 'charger', isElite = false) {
+    if (enemies.length >= MAX_ELITES_POOL) return null;
+    const ang = Math.random() * TAU;
+    const dist = 380 + Math.random() * 120;
+    const hpScale = 1 + timeSurvived / 90;
+    const defs = {
+      skitter:  { r: 11, hp: 30,  speed: 175 },
+      charger:  { r: 15, hp: 70,  speed: 135 },
+      ironclad: { r: 20, hp: 160, speed: 92, armored: true }
+    };
+    const d = defs[kind] || defs.charger;
+    const mult = isElite ? 2.6 : 1;
+    const hp = Math.round(d.hp * hpScale * (isElite ? 4.5 : 1));
+    const en = {
+      x: player.x + Math.cos(ang) * dist,
+      y: player.y + Math.sin(ang) * dist,
+      vx: 0, vy: 0, kbX: 0, kbY: 0,
+      rot: Math.random() * TAU, flash: 0, _sawCd: 0,
+      kind, isElite: !!isElite,
+      r: d.r * (isElite ? 1.55 : 1),
+      hp, maxHp: hp,
+      baseSpeed: d.speed * (isElite ? 0.8 : 1),
+      speed: d.speed,
+      armored: !!d.armored,
+      dead: false
+    };
+    enemies.push(en);
+    return en;
+  }
+
+  // Coup sur un ennemi : dégâts, recul, étincelles, chiffres, mort éventuelle
+  function inflictBonk(en, dmg, fromX, fromY, force, isSlam) {
+    if (!en || en.dead) return;
+    if (en.armored) {
+      if (isSlam) {
+        en.armored = false;
+        addPopup(en.x, en.y - 20, 'ARMURE BRISÉE', '#9CC5C9', true);
+        epicBurst(en.x, en.y, 0.5, 0.35);
+      } else {
+        dmg *= 0.45;
+      }
+    }
+    en.hp -= dmg;
+    en.flash = 0.09;
+
+    const dx = en.x - fromX, dy = en.y - fromY;
+    const d = hypot(dx, dy) || 1;
+    const resist = en.isElite ? 0.5 : 1;
+    en.kbX += (dx / d) * force * resist;
+    en.kbY += (dy / d) * force * resist;
+
+    for (let i = 0; i < 7; i++) {
+      const a = Math.atan2(dy, dx) + (Math.random() - 0.5) * 1.6;
+      const v = 160 + Math.random() * 260;
+      addSpark(en.x, en.y, 12, Math.cos(a) * v, Math.sin(a) * v, 50 + Math.random() * 120,
+        i % 3 === 0 ? 0xFFFFFF : (i % 3 === 1 ? 0xFF2A3C : 0xE5B84B), 2.6, 0.9);
+    }
+    addPopup(en.x, en.y - 8, String(Math.max(1, Math.round(dmg))), isSlam ? '#E5B84B' : '#FFFFFF', isSlam);
+    AudioFX.playMetallicBonk(!!isSlam, !!en.armored);
+    if (dmg > 30) { hitstop = Math.max(hitstop, 0.016); camShake = Math.max(camShake, 6); }
+
+    if (en.hp <= 0) killEnemy(en);
+  }
+
+  function killEnemy(en) {
+    if (en.dead) return;
+    en.dead = true;
+    totalKills++;
+    AudioFX.playDopamineChime(true);
+    addSplatter(en.x, en.y, en.isElite ? 40 : 14, 0xD90416, 1.3);
+    epicBurst(en.x, en.y, en.isElite ? 1.4 : 0.7, en.isElite ? 0.8 : 0.4);
+    if (en.isElite) { hitstop = Math.max(hitstop, 0.06); showOmen('ÉLITE PURGÉ // MASSACRE'); }
+
+    const drops = en.isElite ? 8 : 3;
+    for (let i = 0; i < drops && gems.length < MAX_LOOT_POOL; i++) {
+      const a = Math.random() * TAU, rr = 6 + Math.random() * 18;
+      const isGold = Math.random() < (en.isElite ? 0.5 : 0.3);
+      gems.push({
+        x: en.x + Math.cos(a) * rr, y: en.y + Math.sin(a) * rr,
+        val: isGold ? 2 : (en.isElite ? 4 : 2), r: 5, isGold, magnetized: false
+      });
+    }
+    if (en.isElite && Math.random() < 0.15) spawnRelicDrop(en.x, en.y);
+    if (activeRelics.architectIron > 0 && Math.random() < 0.35) {
+      const c = getCell(Math.floor(en.x / CELL_W), Math.floor(en.y / CELL_W));
+      c.pillars.push({ x: en.x, y: en.y, r: 18, hp: 100, destroyed: false, rot: Math.random() * TAU });
+    }
+  }
+
   function spawnRelicDrop(x, y) {
     const types = ['avarice', 'overdrive', 'stasis', 'singularity', 'architect', 'transfusion'];
     const rType = types[Math.floor(Math.random() * types.length)];
@@ -2213,6 +2453,17 @@
     }
 
     timeSurvived += dt;
+
+    // Vitesse exponentielle de la horde (Megabonk) : exp(t / TAU), plafonnée
+    enemySpeedMult = Math.min(ENEMY_SPEED_CAP, Math.exp(timeSurvived / ENEMY_SPEED_TAU));
+    const tierNow = Math.floor(enemySpeedMult * 2) / 2;
+    if (tierNow > enemySpeedTier) {
+      enemySpeedTier = tierNow;
+      showOmen(`CADENCE DE LA HORDE ×${tierNow.toFixed(1)}`);
+      shaderImpact = Math.max(shaderImpact, 0.5);
+      camShake = Math.max(camShake, 10);
+      AudioFX.playScreech();
+    }
     autoSaveTimer += dt;
     if (autoSaveTimer >= 3.0) {
       autoSaveTimer = 0;
@@ -2278,6 +2529,12 @@
       player.vx = player.dashDirX * player.speed * 3.4;
       player.vy = player.dashDirY * player.speed * 3.4;
       player.dashTime -= dt;
+      for (let k = 0; k < 3; k++) {
+        const off = (Math.random() - 0.5) * 22;
+        addSpark(player.x - player.dashDirY * off, player.y + player.dashDirX * off, 6 + Math.random() * 12,
+          -player.dashDirX * 60 + (Math.random() - 0.5) * 50, -player.dashDirY * 60 + (Math.random() - 0.5) * 50, 20 + Math.random() * 40,
+          k % 2 ? 0xFFFFFF : 0xE5B84B, 2.8, 1.2, 60);
+      }
 
       if (player.dashTime <= 0 && hasPerk('anvilDrop')) {
         const dropR = 110 * player.sizeMult;
@@ -2362,6 +2619,29 @@
       } else {
         s.progress = Math.max(0, s.progress - dt * 18);
       }
+    }
+
+    // 0. Apparition des ennemis Tiers 2-4 : cadence croissante, cuirassés puis élites
+    spawnClock -= dt;
+    const maxLive = Math.min(MAX_ELITES_POOL - 5, 3 + Math.floor(timeSurvived / 12));
+    if (spawnClock <= 0 && enemies.length < maxLive) {
+      spawnClock = Math.max(1.1, 4.2 - timeSurvived * 0.014);
+      const roll = Math.random();
+      let kind = 'skitter';
+      if (timeSurvived > 40 && roll > 0.72) kind = 'ironclad';
+      else if (roll > 0.38) kind = 'charger';
+      spawnEnemy(kind, false);
+      if (timeSurvived > 75 && Math.random() < Math.min(0.28, 0.06 + (timeSurvived - 75) * 0.0012)) {
+        spawnEnemy(['charger', 'ironclad'][Math.floor(Math.random() * 2)], true);
+      }
+    }
+
+    // Braises ambiantes : montent lentement autour du joueur
+    if (Math.random() < dt * 22) {
+      const ea = Math.random() * TAU, er = 40 + Math.random() * 360;
+      addSpark(player.x + Math.cos(ea) * er, player.y + Math.sin(ea) * er, 2 + Math.random() * 10,
+        (Math.random() - 0.5) * 18, (Math.random() - 0.5) * 18, 30 + Math.random() * 40,
+        Math.random() < 0.5 ? 0xE5B84B : 0xFF3A2A, 0.45, 0.8, -6);
     }
 
     // 1. Apparition massive de la Vermine (Tier 1 : Mass Slaughter)
@@ -2595,8 +2875,8 @@
 
       if (activeRelics.executionStasis > 0) continue; // Gel total par Relique
 
-      v.x += (dx / d) * v.speed * vDt;
-      v.y += (dy / d) * v.speed * vDt;
+      v.x += (dx / d) * v.speed * enemySpeedMult * vDt;
+      v.y += (dy / d) * v.speed * enemySpeedMult * vDt;
 
       if (d < v.r + player.r && player.invuln <= 0) {
         applyDamageToPlayer(8);
@@ -2625,6 +2905,7 @@
 
       if (activeRelics.executionStasis <= 0) {
         if (kbSpeed < 85) {
+          en.speed = (en.baseSpeed || en.speed) * enemySpeedMult;
           en.vx = (dxP / distP) * en.speed;
           en.vy = (dyP / distP) * en.speed;
         } else {
@@ -2709,6 +2990,7 @@
               player.xp -= player.xpNext;
               player.level++;
               player.xpNext = Math.floor(player.xpNext * 1.40 + 5);
+              epicBurst(player.x, player.y, 1.3, 0.7);
               saveCurrentRunToSlot();
               openTarotScreen();
             }
@@ -2731,16 +3013,16 @@
 
     for (let i = slashes.length - 1; i >= 0; i--) {
       const s = slashes[i];
-      s.life -= dt * 4.5;
-      s.r = lerp(s.r, s.maxR, dt * 15);
+      s.life -= dt * (s.decay || 4.5);
+      s.r = lerp(s.r, s.maxR, Math.min(1, dt * (s.spd || 15)));
       if (s.life <= 0) slashes.splice(i, 1);
     }
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.x += p.vx * dt; p.y += p.vy * dt;
       p.z = Math.max(1, p.z + p.vz * dt);
-      p.vz -= 280 * dt;
-      p.life -= dt * 2.2;
+      p.vz -= (p.grav !== undefined ? p.grav : 280) * dt;
+      p.life -= dt * (p.decay || 2.2);
       if (p.life <= 0) particles.splice(i, 1);
     }
     for (let i = popups.length - 1; i >= 0; i--) {
@@ -2760,6 +3042,18 @@
     totalKills++;
     AudioFX.playVerminPop();
     addSplatter(v.x, v.y, 4, 0xD90416, 0.9);
+    for (let i = 0; i < 3; i++) {
+      const a = Math.random() * TAU, sp = 140 + Math.random() * 240;
+      addSpark(v.x, v.y, 8, Math.cos(a) * sp, Math.sin(a) * sp, 60 + Math.random() * 110,
+        i === 0 ? 0xFFFFFF : (i === 1 ? 0xFF3A2A : 0xE5B84B), 2.8, 0.85);
+    }
+
+    // Palier de massacre : explosion épique autour du joueur
+    if (totalKills % 50 === 0) {
+      epicBurst(player.x, player.y, 1.1, 0.55);
+      showOmen(`MASSACRE // ${totalKills} AMES FAUCHÉES`);
+      healPlayer(3);
+    }
 
     if (gems.length < MAX_LOOT_POOL) {
       const dropGold = Math.random() < 0.22;
@@ -2850,6 +3144,13 @@
     playerGroup.rotation.y = faceRot;
     playerCoreMesh.material.color.setHex(player.invuln > 0 ? 0xD90416 : 0xFFFFFF);
 
+    const pulse = 1 + 0.12 * Math.sin(time * 6.0);
+    playerAuraMesh.scale.set(120 * pulse, 1, 120 * pulse);
+    playerAuraMesh.material.color.setHex(player.invuln > 0 ? 0xFF0022 : 0xFFE9B0);
+    playerAuraWide.material.opacity = 0.28 + 0.1 * Math.sin(time * 2.2) + clamp(1 - player.hp / player.maxHp, 0, 1) * 0.2;
+    playerRingMesh.rotation.y = time * 1.4;
+    playerRingMesh.material.opacity = 0.65 + 0.3 * Math.sin(time * 8.0);
+
     aegisRingMesh.visible = player.aegisActive;
     if (player.aegisActive) {
       aegisRingMesh.rotation.x = time * 2.2;
@@ -2884,8 +3185,12 @@
       }
       dummyObj.updateMatrix();
       verminInstancedMesh.setMatrixAt(i, dummyObj.matrix);
+      dummyObj.position.y = i < vermin.length ? 1.0 : -999;
+      dummyObj.updateMatrix();
+      verminGlowInstanced.setMatrixAt(i, dummyObj.matrix);
     }
     verminInstancedMesh.instanceMatrix.needsUpdate = true;
+    verminGlowInstanced.instanceMatrix.needsUpdate = true;
 
     // Synchronisation Monolithes, Autels Usuriers & Stèles
     const pcx = Math.floor(player.x / CELL_W);
@@ -2930,6 +3235,9 @@
         m._armor.visible = !!en.armored;
         const colHex = en.flash > 0 ? 0xFFFFFF : (en.isElite || en.kind === 'charger' ? 0xFF0022 : 0xD8D2C7);
         m._body.material.color.setHex(colHex);
+        m._glow.material.color.setHex(en.armored ? 0x7FD0D8 : (en.isElite ? 0xFF5A1A : 0xFF1030));
+        const gp = 1 + 0.15 * Math.sin(time * 7 + i);
+        m._glow.scale.set(95 * gp, 1, 95 * gp);
       } else {
         m.visible = false;
       }
@@ -2993,8 +3301,10 @@
         const p = particles[i];
         dummyObj.position.set(p.x, p.z, p.y);
         dummyObj.rotation.set(time * 8 + i, time * 5, 0);
-        const sc = Math.max(0.05, p.life * 1.4);
+        const sc = Math.max(0.05, p.life * 1.4 * (p.size || 1));
         dummyObj.scale.set(sc, sc, sc);
+        partColor.setHex(p.col);
+        particleInstancedMesh.setColorAt(i, partColor);
       } else {
         dummyObj.position.set(0, -999, 0);
         dummyObj.scale.set(0.001, 0.001, 0.001);
@@ -3003,6 +3313,7 @@
       particleInstancedMesh.setMatrixAt(i, dummyObj.matrix);
     }
     particleInstancedMesh.instanceMatrix.needsUpdate = true;
+    particleInstancedMesh.instanceColor.needsUpdate = true;
 
     renderer.setRenderTarget(renderTarget);
     renderer.render(scene, camera);
@@ -3135,7 +3446,7 @@
 
     document.getElementById('ui-slot-lbl').textContent = `SLOT ${['I','II','III'][activeSlotIndex]}`;
     document.getElementById('ui-combo').textContent = `♪x${AudioFX.comboStep + 1}`;
-    document.getElementById('ui-time').textContent = formatMMSS(timeSurvived);
+    document.getElementById('ui-time').textContent = `${formatMMSS(timeSurvived)} ×${enemySpeedMult.toFixed(1)}`;
     document.getElementById('ui-slams').textContent = `${totalKills} // ${totalWallSlams}`;
 
     const aegisEl = document.getElementById('ui-aegis-status');
@@ -3264,6 +3575,9 @@
     emergencyStasisTimer = 0;
     activeShopCell = null;
     for (const rKey in activeRelics) activeRelics[rKey] = 0;
+    enemySpeedMult = 1;
+    enemySpeedTier = 1;
+    spawnClock = 0;
 
     Object.assign(player, {
       x: 0, y: 0, vx: 0, vy: 0,
