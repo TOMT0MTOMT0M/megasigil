@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#030303">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>MEGASIGIL // BONK.03 — RAW CYBERSIGIL</title>
+<style>
+  :root {
+    --void: #030303;
+    --soot: #0A0908;
+    --rust: #1E1916;
+    --iron: #4A4642;
+    --bone: #CFC7B8;
+    --blood: #7A040E;
+    --artery: #C90A1D;
+    --font-mono: 'Courier New', Courier, monospace;
+    --font-serif: 'Times New Roman', Georgia, serif;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+    border-radius: 0 !important;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: #000;
+    color: var(--bone);
+    font-family: var(--font-mono);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* CHÂSSIS STRICTEMENT VERTICAL MOBILE */
+  #mobile-shell {
+    position: relative;
+    width: 100%;
+    max-width: 450px;
+    height: 100dvh;
+    background: var(--void);
+    border-left: 2px solid var(--iron);
+    border-right: 2px solid var(--iron);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  canvas#gl-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+  }
+
+  /* CADRE GRAPHIQUE TRIBAL BRUTALISTE */
+  .frame-border {
+    position: absolute;
+    inset: 4px;
+    border: 1px solid rgba(207, 199, 184, 0.22);
+    pointer-events: none;
+    z-index: 15;
+  }
+
+  /* HUD SUPÉRIEUR ULTRA-COMPACT POUR PORTRAIT */
+  .hud-top {
+    position: relative;
+    z-index: 20;
+    padding: 8px 8px 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    pointer-events: none;
+    background: linear-gradient(to bottom, rgba(3,3,3,0.95) 0%, rgba(3,3,3,0.65) 75%, transparent 100%);
+  }
+
+  .top-strip {
+    display: flex;
+    gap: 4px;
+    align-items: stretch;
+    height: 22px;
+  }
+
+  .xp-vessel {
+    flex: 1;
+    position: relative;
+    background: var(--soot);
+    border: 1px solid var(--bone);
+    overflow: hidden;
+  }
+
+  #xp-bar {
+    height: 100%;
+    width: 0%;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--bone) 0px,
+      var(--bone) 3px,
+      var(--void) 3px,
+      var(--void) 5px
+    );
+  }
+
+  .xp-meta {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 6px;
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: var(--bone);
+    mix-blend-mode: difference;
+  }
+
+  .sys-btn {
+    pointer-events: auto;
+    background: var(--soot);
+    color: var(--bone);
+    border: 1px solid var(--bone);
+    padding: 0 7px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  .sys-btn:active {
+    background: var(--bone);
+    color: var(--void);
+  }
+
+  .vitals-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 0.8fr 0.9fr;
+    gap: 4px;
+  }
+
+  .vital-cell {
+    background: rgba(8, 7, 7, 0.9);
+    border: 1px solid var(--iron);
+    padding: 3px 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .vital-cell.blood-cell {
+    border-left: 3px solid var(--artery);
+  }
+
+  .vital-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 8px;
+    color: #8E877F;
+    letter-spacing: 0.5px;
+  }
+
+  .vital-val {
+    font-size: 11px;
+    font-weight: 900;
+    color: var(--bone);
+  }
+
+  .hp-track {
+    width: 100%;
+    height: 5px;
+    background: #1B0306;
+    border: 1px solid var(--blood);
+    margin-top: 2px;
+  }
+
+  #hp-bar {
+    height: 100%;
+    width: 100%;
+    background: var(--artery);
+  }
+
+  .arsenal-row {
+    display: flex;
+    gap: 3px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .wpn-tag {
+    background: rgba(10, 9, 8, 0.88);
+    border: 1px solid var(--iron);
+    padding: 2px 4px;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+    color: var(--bone);
+    white-space: nowrap;
+  }
+
+  .wpn-tag b {
+    color: var(--artery);
+  }
+
+  /* ALERTE CENTRALE OPPRESSANTE */
+  #omen-alert {
+    position: relative;
+    z-index: 20;
+    align-self: center;
+    width: 92%;
+    text-align: center;
+    font-family: var(--font-serif);
+    font-size: 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--bone);
+    background: rgba(5, 4, 4, 0.92);
+    border-top: 1px solid var(--artery);
+    border-bottom: 1px solid var(--artery);
+    padding: 5px 8px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    box-shadow: 0 0 25px rgba(0,0,0,0.95);
+  }
+
+  /* ZONE D'ERGONOMIE BASSE (THUMB-ZONE) */
+  .hud-bottom {
+    position: relative;
+    z-index: 20;
+    padding: 10px 12px 18px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    pointer-events: none;
+    background: linear-gradient(to top, rgba(3,3,3,0.92) 0%, rgba(3,3,3,0.4) 65%, transparent 100%);
+  }
+
+  .thumb-guide {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 8px;
+    color: rgba(207, 199, 184, 0.55);
+    letter-spacing: 1px;
+    border-left: 2px solid var(--iron);
+    padding-left: 6px;
+  }
+
+  .thumb-guide strong {
+    color: var(--artery);
+  }
+
+  /* GROS BOUTON D'IMPULSION SOUS LE POUCE DROIT */
+  #btn-impulse {
+    pointer-events: auto;
+    width: 86px;
+    height: 86px;
+    background: rgba(10, 8, 8, 0.94);
+    border: 2px solid var(--bone);
+    color: var(--bone);
+    font-family: var(--font-mono);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    box-shadow: 4px 4px 0 var(--blood);
+  }
+
+  #btn-impulse:active {
+    transform: translate(2px, 2px);
+    background: var(--bone);
+    color: var(--void);
+  }
+
+  #impulse-cd-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0%;
+    background: rgba(201, 10, 29, 0.55);
+    pointer-events: none;
+  }
+
+  .imp-title {
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 1px;
+  }
+
+  .imp-sub {
+    font-size: 8px;
+    color: #9A9288;
+    margin-top: 2px;
+  }
+
+  /* MODALESPLEIN ÉCRAN (MUTATIONS MAUDITES & AUTOPSIE) */
+  .overlay-screen {
+    position: absolute;
+    inset: 0;
+    background: rgba(3, 3, 3, 0.94);
+    z-index: 30;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 14px;
+  }
+
+  .overlay-screen.active {
+    display: flex;
+  }
+
+  .modal-header {
+    width: 100%;
+    border-bottom: 2px solid var(--bone);
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .modal-header h2 {
+    font-family: var(--font-serif);
+    font-size: 20px;
+    letter-spacing: 4px;
+    color: var(--bone);
+    font-weight: normal;
+  }
+
+  .modal-header p {
+    font-size: 9px;
+    color: var(--artery);
+    letter-spacing: 1.5px;
+    margin-top: 2px;
+    font-weight: bold;
+  }
+
+  .tarot-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .tarot-card {
+    background: var(--soot);
+    border: 1px solid var(--bone);
+    border-left: 4px solid var(--artery);
+    padding: 10px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .tarot-card:active {
+    background: var(--bone);
+    color: var(--void);
+  }
+
+  .tarot-icon {
+    width: 48px;
+    height: 48px;
+    background: var(--void);
+    border: 1px solid var(--iron);
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .tarot-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .tarot-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .tarot-name {
+    font-family: var(--font-serif);
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .tarot-tag {
+    font-size: 8px;
+    color: var(--bone);
+    background: var(--blood);
+    padding: 1px 4px;
+    font-weight: 900;
+  }
+
+  .tarot-boon {
+    font-size: 10px;
+    color: var(--bone);
+    line-height: 1.25;
+  }
+
+  .tarot-curse {
+    font-size: 9px;
+    color: var(--artery);
+    font-weight: bold;
+  }
+
+  .tarot-card:active .tarot-boon,
+  .tarot-card:active .tarot-curse {
+    color: var(--void);
+  }
+
+  /* PANNEAU D'ENTRÉE / MORT */
+  .manifesto-box {
+    border: 2px solid var(--bone);
+    background: var(--soot);
+    padding: 18px 14px;
+    width: 100%;
+    box-shadow: 6px 6px 0 var(--blood);
+  }
+
+  .manifesto-title {
+    font-family: var(--font-serif);
+    font-size: 26px;
+    letter-spacing: 5px;
+    text-align: center;
+    color: var(--bone);
+  }
+
+  .manifesto-sub {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--artery);
+    text-align: center;
+    margin-bottom: 12px;
+    font-weight: 900;
+  }
+
+  .manifesto-rules {
+    border-top: 1px solid var(--iron);
+    border-bottom: 1px solid var(--iron);
+    padding: 10px 0;
+    margin-bottom: 14px;
+    font-size: 10px;
+    line-height: 1.55;
+    color: #B5ADA0;
+  }
+
+  .manifesto-rules b {
+    color: var(--bone);
+  }
+
+  .manifesto-rules .warn {
+    color: var(--artery);
+    font-weight: 900;
+  }
+
+  .btn-engrave {
+    width: 100%;
+    padding: 14px;
+    background: var(--bone);
+    color: var(--void);
+    border: 2px solid var(--bone);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  .btn-engrave:active {
+    background: var(--artery);
+    color: var(--bone);
+  }
+</style>
+</head>
+<body>
+
+<div id="mobile-shell">
+  <!-- CANVAS WEBGL SHADER TEMPS RÉEL -->
+  <canvas id="gl-canvas"></canvas>
+  <div class="frame-border"></div>
+
+  <!-- HUD HAUT (OPTIMISÉ PORTRAIT) -->
+  <header class="hud-top">
+    <div class="top-strip">
+      <div class="xp-vessel">
+        <div id="xp-bar"></div>
+        <div class="xp-meta">
+          <span id="ui-lvl">SCEAU I</span>
+          <span id="ui-xp">MERCURE: 0/8</span>
+        </div>
+      </div>
+      <button class="sys-btn" id="btn-sound">SON:ON</button>
+      <button class="sys-btn" id="btn-fs">PLEIN ÉCRAN</button>
+    </div>
+
+    <div class="vitals-grid">
+      <div class="vital-cell blood-cell">
+        <div class="vital-head">
+          <span>SANG (SOIF: <b id="ui-bleed" style="color:var(--artery)">-0.8/s</b>)</span>
+          <span id="ui-hp-txt">100/100</span>
+        </div>
+        <div class="hp-track"><div id="hp-bar"></div></div>
+      </div>
+      <div class="vital-cell">
+        <div class="vital-head"><span>STRATE</span></div>
+        <div class="vital-val" id="ui-time">00:00</div>
+      </div>
+      <div class="vital-cell">
+        <div class="vital-head"><span>FRACAS // MURS</span></div>
+        <div class="vital-val" id="ui-slams">0 // 0</div>
+      </div>
+    </div>
+
+    <div class="arsenal-row" id="ui-arsenal"></div>
+  </header>
+
+  <!-- BANNIÈRE D'ALERTE -->
+  <div id="omen-alert">FRACAS MURAL // SANG RESTAURÉ</div>
+
+  <!-- HUD BAS (ZONE DU POUCE) -->
+  <footer class="hud-bottom">
+    <div class="thumb-guide">
+      <span>GLISSER : <b>MOUVEMENT</b></span>
+      <span>DOUBLE-TAP : <b>IMPULSION</b></span>
+      <span>FRACAS MURAL : <b>+4 SANG & BRISE-ARMURE</b></span>
+    </div>
+
+    <button id="btn-impulse">
+      <div id="impulse-cd-overlay"></div>
+      <span class="imp-title">IMPULSION</span>
+      <span class="imp-sub">[FRACAS]</span>
+    </button>
+  </footer>
+
+  <!-- MODAL LEVEL UP : STIGMATES MAUDITES -->
+  <div class="overlay-screen" id="screen-levelup">
+    <div class="modal-header">
+      <h2>STIGMATE DU SCEAU</h2>
+      <p>TOUTE PUISSANCE EXIGE UN TRIBUT DE CHAIR</p>
+    </div>
+    <div class="tarot-stack" id="tarot-container"></div>
+  </div>
+
+  <!-- MODAL INTRO / AUTOPSIE -->
+  <div class="overlay-screen active" id="screen-manifesto">
+    <div class="manifesto-box">
+      <div class="manifesto-title" id="man-title">MEGASIGIL</div>
+      <div class="manifesto-sub" id="man-sub">BONK.03 // SHADER-GRUNGE HORDE BRAWLER</div>
+      <div class="manifesto-rules" id="man-body">
+        1. <span class="warn">LA SOIF DU SCEAU :</span> Votre enveloppe saigne en continu. Fuir passivement vous tuera.<br>
+        2. <b>FRACAS MURAL (BONK) :</b> Projetez violemment les entités contre les <b>Monolithes de Fer</b> pour briser leur carapace et <b>boire +4 PV</b>.<br>
+        3. <b>CUIRASSÉS D’OXYDE :</b> Leur blindage frontal bloque 85% des dégâts directs. <b>Seul un Fracas Mural détruit leur armure.</b><br>
+        4. <b>CONTRE-IMPULSION :</b> Percuter un ennemi qui charge avec votre Impulsion réinitialise 60% de sa recharge.
+      </div>
+      <button class="btn-engrave" id="btn-start">GRAVER LE SCEAU [JOUER]</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* =========================================================================
+     1. PIPELINE WEBGL FRAGMENT SHADER "CRADE / XEROX / BAYER DITHER"
+     ========================================================================= */
+  const glCanvas = document.getElementById('gl-canvas');
+  const offCanvas = document.createElement('canvas');
+  const ctx = offCanvas.getContext('2d', { alpha: false });
+
+  let gl = null;
+  let glProg = null;
+  let glTex = null;
+  let uLocs = {};
+
+  const VS_SRC = `
+    attribute vec2 a_pos;
+    varying vec2 v_uv;
+    void main() {
+      v_uv = vec2(a_pos.x * 0.5 + 0.5, 0.5 - a_pos.y * 0.5);
+      gl_Position = vec4(a_pos, 0.0, 1.0);
+    }
+  `;
+
+  // Shader GLSL Brutaliste : Distorsion CRT/Tape, Grain Filthy, Bayer Dithering & Saignée Rouge
+  const FS_SRC = `
+    precision mediump float;
+    varying vec2 v_uv;
+    uniform sampler2D u_tex;
+    uniform vec2 u_res;
+    uniform float u_time;
+    uniform float u_impact;
+    uniform float u_bleedRatio;
+
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+    }
+
+    // Matrice de tramage Bayer 4x4 analytique pour l'effet photocopie grunge
+    float bayer4(vec2 coord) {
+      vec2 p = mod(floor(coord), 4.0);
+      float idx = p.x + p.y * 4.0;
+      if (idx < 0.5) return 0.0/16.0;
+      if (idx < 1.5) return 8.0/16.0;
+      if (idx < 2.5) return 2.0/16.0;
+      if (idx < 3.5) return 10.0/16.0;
+      if (idx < 4.5) return 12.0/16.0;
+      if (idx < 5.5) return 4.0/16.0;
+      if (idx < 6.5) return 14.0/16.0;
+      if (idx < 7.5) return 6.0/16.0;
+      if (idx < 8.5) return 3.0/16.0;
+      if (idx < 9.5) return 11.0/16.0;
+      if (idx < 10.5) return 1.0/16.0;
+      if (idx < 11.5) return 9.0/16.0;
+      if (idx < 12.5) return 15.0/16.0;
+      if (idx < 13.5) return 7.0/16.0;
+      if (idx < 14.5) return 13.0/16.0;
+      return 5.0/16.0;
+    }
+
+    void main() {
+      vec2 uv = v_uv;
+      vec2 centered = uv * 2.0 - 1.0;
+      float r2 = dot(centered, centered);
+
+      // 1. Courbure optique subtile & Déchirure horizontale (Tape Tear)
+      uv += centered * (r2 * 0.035);
+      float tearLine = step(0.985 - u_impact * 0.12, hash(vec2(floor(uv.y * 55.0), floor(u_time * 24.0))));
+      uv.x += tearLine * (hash(vec2(uv.y, u_time)) - 0.5) * (0.018 + u_impact * 0.045);
+
+      // 2. Aberration chromatique radiale violente sur les bords et lors des impacts
+      float chroma = (0.0022 + r2 * 0.004 + u_impact * 0.016);
+      vec3 colR = texture2D(u_tex, uv + vec2(chroma, 0.0)).rgb;
+      vec3 colG = texture2D(u_tex, uv).rgb;
+      vec3 colB = texture2D(u_tex, uv - vec2(chroma, 0.0)).rgb;
+      vec3 col = vec3(colR.r, colG.g, colB.b);
+
+      // 3. Salissure organique & Grain analogique haute fréquence
+      float rawNoise = hash(uv * u_res + vec2(u_time * 60.0, -u_time * 43.0));
+      float grimeWave = hash(floor(uv * vec2(80.0, 260.0)) + floor(u_time * 8.0));
+      float scanline = sin(uv.y * u_res.y * 1.35) * 0.06;
+
+      // 4. Détection du Sang (Rouge artériel) vs Os/Acier
+      float redDominance = clamp((col.r - max(col.g, col.b)) * 2.2, 0.0, 1.0);
+      float luma = dot(col, vec3(0.299, 0.587, 0.114));
+
+      // 5. Tramage Bayer + Écrasement Xerox
+      float dither = (bayer4(gl_FragCoord.xy * 0.5) - 0.5) * 0.22;
+      float filthyLuma = luma + dither + (rawNoise - 0.5) * 0.14 - scanline;
+      float quantized = floor(filthyLuma * 4.5 + 0.5) / 4.5;
+      float finalLuma = mix(filthyLuma, quantized, 0.58);
+
+      // Palette métal oxydé / suie / os calciné
+      vec3 soot = vec3(0.018, 0.016, 0.016);
+      vec3 bone = vec3(0.83, 0.79, 0.73);
+      vec3 baseGritty = mix(soot, bone, clamp(finalLuma, 0.0, 1.0));
+
+      // Réinjection du rouge sang corrosif
+      vec3 bloodCol = vec3(0.85, 0.03, 0.11);
+      vec3 outCol = mix(baseGritty, bloodCol, redDominance);
+
+      // 6. Rayures verticales de pellicule abîmée
+      float scratch = step(0.996, hash(vec2(floor(uv.x * 320.0), floor(u_time * 6.0))));
+      outCol += scratch * vec3(0.18, 0.16, 0.14);
+
+      // 7. Vignettage étouffant + Agonie sanguine à bas PV
+      float vig = smoothstep(1.38, 0.32, r2);
+      outCol *= vig;
+      float dangerPulse = (1.0 - vig) * u_bleedRatio * (0.55 + 0.45 * sin(u_time * 9.0));
+      outCol += dangerPulse * vec3(0.55, 0.0, 0.04);
+
+      // Flash négatif brutal sur impact lourd
+      if (u_impact > 0.65) {
+        outCol = mix(outCol, 1.0 - outCol, (u_impact - 0.65) * 2.2);
+      }
+
+      gl_FragColor = vec4(outCol, 1.0);
+    }
+  `;
+
+  function initWebGL() {
+    gl = glCanvas.getContext('webgl', { antialias: false, preserveDrawingBuffer: false });
+    if (!gl) return;
+
+    const compile = (type, src) => {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    };
+
+    const vs = compile(gl.VERTEX_SHADER, VS_SRC);
+    const fs = compile(gl.FRAGMENT_SHADER, FS_SRC);
+    glProg = gl.createProgram();
+    gl.attachShader(glProg, vs);
+    gl.attachShader(glProg, fs);
+    gl.linkProgram(glProg);
+    gl.useProgram(glProg);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+      -1, -1,  1, -1, -1,  1,
+      -1,  1,  1, -1,  1,  1
+    ]), gl.STATIC_DRAW);
+
+    const aPos = gl.getAttribLocation(glProg, 'a_pos');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    glTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, glTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    uLocs = {
+      res: gl.getUniformLocation(glProg, 'u_res'),
+      time: gl.getUniformLocation(glProg, 'u_time'),
+      impact: gl.getUniformLocation(glProg, 'u_impact'),
+      bleedRatio: gl.getUniformLocation(glProg, 'u_bleedRatio')
+    };
+  }
+
+  let vw = 360;
+  let vh = 640;
+
+  function resizeViewport() {
+    const shell = document.getElementById('mobile-shell');
+    const rect = shell.getBoundingClientRect();
+    vw = Math.floor(rect.width);
+    vh = Math.floor(rect.height);
+
+    // Résolution interne légèrement brute pour renforcer le grain industriel et garder 60fps fluides sur Android
+    offCanvas.width = vw;
+    offCanvas.height = vh;
+    glCanvas.width = vw;
+    glCanvas.height = vh;
+    if (gl) gl.viewport(0, 0, vw, vh);
+  }
+
+  initWebGL();
+  resizeViewport();
+  window.addEventListener('resize', resizeViewport);
+
+  /* =========================================================================
+     2. SYNTHÉTISEUR AUDIO INDUSTRIEL CRADE (WEB AUDIO API)
+     =
