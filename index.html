@@ -1220,11 +1220,10 @@
       this.droneGain.gain.exponentialRampToValueAtTime(0.06, now + duration);
     },
 
-    // Effet "Popcorn Slaughter" : claquement viscéral rapide quand la Vermine éclate en masse
     playVerminPop() {
       if (this.muted || !this.ctx) return;
       const now = this.ctx.currentTime;
-      if (now - this.lastPopTime < 0.024) return; // Limiteur anti-saturation sur massacre de 50+ entités
+      if (now - this.lastPopTime < 0.024) return;
       this.lastPopTime = now;
 
       try {
@@ -1245,7 +1244,6 @@
       } catch (_) {}
     },
 
-    // Tintement d'Obole d'Or Noir (Cloche haute fréquence + harmonique dorée)
     playGoldClink() {
       if (this.muted || !this.ctx) return;
       try {
@@ -1265,7 +1263,6 @@
       } catch (_) {}
     },
 
-    // Son de Relique Éphémère (Power-up rare ramassé)
     playRelicSurge() {
       if (this.muted || !this.ctx) return;
       try {
@@ -1437,7 +1434,7 @@
   };
 
   /* =========================================================================
-     PARTIE 2B : MOTEUR THREE.JS À HAUTE DENSITÉ (`InstancedMesh` + `SigilForge`)
+     PARTIE 2B : DÉCLARATION DES POOLS & MOTEUR THREE.JS WIDESCREEN
      ========================================================================= */
   const webglContainer = document.getElementById('webgl-container');
   const hudCanvas = document.getElementById('hud-2d');
@@ -1449,12 +1446,11 @@
   let playerGroup, playerCoreMesh, playerWingsMesh, aegisRingMesh, sawGroupMesh, familiarGroupMesh;
   let groundGridMesh;
 
-  // Capacités élargies pour le "Mass Slaughter" à 120 FPS
-  const MAX_VERMIN_INSTANCES = 220; // Tier 1 : Nuée instanciée sur GPU
-  const MAX_ELITES_POOL = 55;       // Tiers 2, 3 & 4 : Chasseurs, Cuirassés, Séraphins
+  const MAX_VERMIN_INSTANCES = 220;
+  const MAX_ELITES_POOL = 55;
   const MAX_PILLARS_POOL = 48;
   const MAX_SHOPS_POOL = 6;
-  const MAX_LOOT_POOL = 220;        // Mercure, Oboles d'Or & Reliques Éphémères
+  const MAX_LOOT_POOL = 220;
   const MAX_PROJ_POOL = 95;
   const MAX_PARTICLES_POOL = 300;
   const MAX_SLASHES_POOL = 36;
@@ -1464,14 +1460,14 @@
   let lootMercInstanced = null;
   let lootGoldInstanced = null;
 
-  const eliteMeshes = [];
+  // Déclaration globale anticipée de tous les tableaux de pools
+  const enemyMeshes = [];
   const pillarMeshes = [];
   const shopMeshes = [];
   const projMeshes = [];
   const slashMeshes = [];
   const relicMeshes = [];
   const dummyObj = new THREE.Object3D();
-  const dummyColor = new THREE.Color();
 
   function createCybersigilSpikeGeo(len = 24, width = 6, depth = 4) {
     const shape = new THREE.Shape();
@@ -1528,7 +1524,6 @@
     }
   `;
 
-  // Shader Post-Process : Lisibilité accrue du sol + Contraste pur sur les attaques + Bayer Dithering
   const POST_FS = `
     precision mediump float;
     varying vec2 vUv;
@@ -1629,7 +1624,6 @@
     scene.add(bloodLight);
     scene._bloodLight = bloodLight;
 
-    // Matériaux hiérarchisés pour une lisibilité immédiate
     const matPureWhite = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
     const matBone = new THREE.MeshStandardMaterial({ color: 0xD8D2C7, roughness: 0.3, metalness: 0.75 });
     const matMatteEnemy = new THREE.MeshStandardMaterial({ color: 0x9E9689, roughness: 0.6, metalness: 0.4 });
@@ -1638,14 +1632,12 @@
     const matGold = new THREE.MeshStandardMaterial({ color: 0xE5B84B, roughness: 0.2, metalness: 0.9, emissive: 0x4A3508 });
     const matAegis = new THREE.MeshBasicMaterial({ color: 0x9CC5C9, wireframe: true, transparent: true, opacity: 0.8 });
 
-    // Sol très discret (#131211) pour ne jamais gêner la lecture des projectiles
     const gridGeo = new THREE.PlaneGeometry(2400, 2400, 48, 48);
     gridGeo.rotateX(-Math.PI / 2);
     const gridMat = new THREE.MeshBasicMaterial({ color: 0x141312, wireframe: true });
     groundGridMesh = new THREE.Mesh(gridGeo, gridMat);
     scene.add(groundGridMesh);
 
-    // Avatar 3D du Joueur + Halo Calligraphique `SigilForge` au sol
     playerGroup = new THREE.Group();
     const coreGeo = createCybersigilSpikeGeo(26, 10, 5);
     playerCoreMesh = new THREE.Mesh(coreGeo, matPureWhite);
@@ -1672,7 +1664,6 @@
     aegisRingMesh.visible = false;
     playerGroup.add(aegisRingMesh);
 
-    // Roues de Supplice + Automates Mercenaires
     sawGroupMesh = new THREE.Group();
     sawGroupMesh.position.y = 10;
     const sawBladeGeo = createStarSigilGeo(4, 18, 3, 3);
@@ -1694,7 +1685,6 @@
     scene.add(familiarGroupMesh);
     scene.add(playerGroup);
 
-    // 1. INSTANCED MESH POUR LA NUÉE (TIER 1 : 220 VERMINES CALLIGRAPHIQUES)
     const verminTex = SigilForge.getThreeTexture('VERMIN', 13, '#C8C0B4', '#FF0022');
     const verminGeo = new THREE.PlaneGeometry(28, 28);
     verminGeo.rotateX(-Math.PI / 2);
@@ -1708,7 +1698,6 @@
     verminInstancedMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     scene.add(verminInstancedMesh);
 
-    // 2. POOL POUR LES ÉLITES, CHASSEURS, CUIRASSÉS & SÉRAPHINS NOIRS (TIERS 2, 3, 4)
     const eliteGeo = createStarSigilGeo(4, 18, 4, 22);
     const eliteSigilTex = SigilForge.getThreeTexture('BOSS', 666, '#D8D2C7', '#FF0022');
     const elitePlaneGeo = new THREE.PlaneGeometry(54, 54);
@@ -1740,7 +1729,6 @@
       enemyMeshes.push(grp);
     }
 
-    // 3. MONOLITHES DE FER 3D
     const pillarGeo = createStarSigilGeo(6, 24, 9, 54);
     const pillarWireGeo = new THREE.EdgesGeometry(pillarGeo);
     const pillarLineMat = new THREE.LineBasicMaterial({ color: 0x8E877F });
@@ -1753,7 +1741,6 @@
       pillarMeshes.push(m);
     }
 
-    // 4. AUTELS USURIERS (SHOPS DORÉS) & STÈLES DE MARTYRE
     const shopTex = SigilForge.getThreeTexture('SHOP', 999, '#E5B84B', '#FF0022');
     const shopFloorGeo = new THREE.PlaneGeometry(135, 135);
     shopFloorGeo.rotateX(-Math.PI / 2);
@@ -1779,7 +1766,6 @@
       shopMeshes.push(grp);
     }
 
-    // 5. PROJECTILES, ONDES D'ARMES TRANSCENDÉES & RELIQUES
     const projGeo = createCybersigilSpikeGeo(22, 4.5, 3);
     for (let i = 0; i < MAX_PROJ_POOL; i++) {
       const m = new THREE.Mesh(projGeo, matPureWhite);
@@ -1797,7 +1783,6 @@
       slashMeshes.push(m);
     }
 
-    // 6. INSTANCED MESHES POUR LE MERCURE (ARGENT) ET LES OBOLES (OR)
     const mercGeo = new THREE.OctahedronGeometry(5.5, 0);
     lootMercInstanced = new THREE.InstancedMesh(mercGeo, matBone, MAX_LOOT_POOL);
     lootMercInstanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -1808,7 +1793,6 @@
     lootGoldInstanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     scene.add(lootGoldInstanced);
 
-    // Pool pour les Reliques Éphémères (Power-ups rares flamboyants)
     const relicGeo = createStarSigilGeo(4, 22, 5, 16);
     for (let i = 0; i < 8; i++) {
       const m = new THREE.Mesh(relicGeo, matCrimson);
@@ -1817,7 +1801,6 @@
       relicMeshes.push(m);
     }
 
-    // Particules 3D (Sang Artériel)
     const partGeo = new THREE.TetrahedronGeometry(3.6, 0);
     const partMat = new THREE.MeshBasicMaterial({ color: 0xFF0022 });
     particleInstancedMesh = new THREE.InstancedMesh(partGeo, partMat, MAX_PARTICLES_POOL);
@@ -1839,20 +1822,6 @@
     });
     postQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), postMat);
     postScene.add(postQuad);
-  }
-
-  function onResize3D() {
-    if (!renderer) return;
-    vw = Math.max(640, window.innerWidth);
-    vh = Math.max(480, window.innerHeight);
-    const pr = Math.min(1.75, window.devicePixelRatio || 1);
-    hudCanvas.width = vw;
-    hudCanvas.height = vh;
-    renderer.setSize(vw, vh);
-    renderTarget.setSize(Math.floor(vw * pr), Math.floor(vh * pr));
-    camera.aspect = vw / vh;
-    camera.updateProjectionMatrix();
-    postQuad.material.uniforms.uRes.value.set(vw, vh);
   }
 /* =========================================================================
      PARTIE 3A : MONDE PROCÉDURAL, AUTELS USURIERS (SHOPS) & RELIQUES
